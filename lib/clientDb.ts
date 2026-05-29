@@ -1,31 +1,27 @@
-import { 
-  Tool, 
-  Review, 
-  BlogPost, 
-  TOOLS, 
-  REVIEWS, 
-  BLOG_POSTS,
-  CategorySlug
-} from './data';
+import { Tool, Review, BlogPost, TOOLS, REVIEWS, BLOG_POSTS } from "./data";
+import {
+  getPublishedBlogPosts as getPublishedBlogPostsByDate,
+  getScheduledBlogPosts as getScheduledBlogPostsByDate,
+} from "./blogSchedule";
 
 // Local storage key constants
-const KEY_TOOLS = 'saasrooms_custom_tools';
-const KEY_REVIEWS = 'saasrooms_custom_reviews';
-const KEY_BLOGS = 'saasrooms_custom_blog';
+const KEY_TOOLS = "saasrooms_custom_tools";
+const KEY_REVIEWS = "saasrooms_custom_reviews";
+const KEY_BLOGS = "saasrooms_custom_blog";
 
 // Generic localStorage wrappers to avoid node rendering issues during hydration
 function getStorageItem<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue;
+  if (globalThis.window === undefined) return defaultValue;
   try {
-    let raw = window.localStorage.getItem(key);
+    let raw = globalThis.window.localStorage.getItem(key);
     // Backward compatibility automatic brand migration
     if (!raw) {
-      const oldKey = key.replace('saasrooms_', 'saasmatrix_');
-      raw = window.localStorage.getItem(oldKey);
+      const oldKey = key.replace("saasrooms_", "saasmatrix_");
+      raw = globalThis.window.localStorage.getItem(oldKey);
       if (raw) {
         // Migrate to new key instantly
-        window.localStorage.setItem(key, raw);
-        window.localStorage.removeItem(oldKey);
+        globalThis.window.localStorage.setItem(key, raw);
+        globalThis.window.localStorage.removeItem(oldKey);
       }
     }
     return raw ? JSON.parse(raw) : defaultValue;
@@ -36,9 +32,9 @@ function getStorageItem<T>(key: string, defaultValue: T): T {
 }
 
 function setStorageItem<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    globalThis.window.localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn(`Error writing localStorage key "${key}":`, e);
   }
@@ -55,7 +51,7 @@ export function getCustomTools(): Tool[] {
 
 export function saveCustomTool(tool: Tool): void {
   const current = getCustomTools();
-  const index = current.findIndex(t => t.slug === tool.slug);
+  const index = current.findIndex((t) => t.slug === tool.slug);
   if (index >= 0) {
     current[index] = tool; // Edit
   } else {
@@ -66,14 +62,16 @@ export function saveCustomTool(tool: Tool): void {
 
 export function deleteCustomTool(slug: string): void {
   const current = getCustomTools();
-  const updated = current.filter(t => t.slug !== slug);
+  const updated = current.filter((t) => t.slug !== slug);
   setStorageItem(KEY_TOOLS, updated);
 }
 
 export function getMergedTools(): Tool[] {
   const custom = getCustomTools();
   // Filter core static tools that got mutated / edited by slug
-  const staticFiltered = TOOLS.filter(t => !custom.some(c => c.slug === t.slug));
+  const staticFiltered = TOOLS.filter(
+    (t) => !custom.some((c) => c.slug === t.slug),
+  );
   return [...staticFiltered, ...custom];
 }
 
@@ -84,7 +82,7 @@ export function getCustomReviews(): Review[] {
 
 export function saveCustomReview(review: Review): void {
   const current = getCustomReviews();
-  const index = current.findIndex(r => r.slug === review.slug);
+  const index = current.findIndex((r) => r.slug === review.slug);
   if (index >= 0) {
     current[index] = review; // Edit
   } else {
@@ -95,13 +93,15 @@ export function saveCustomReview(review: Review): void {
 
 export function deleteCustomReview(slug: string): void {
   const current = getCustomReviews();
-  const updated = current.filter(r => r.slug !== slug);
+  const updated = current.filter((r) => r.slug !== slug);
   setStorageItem(KEY_REVIEWS, updated);
 }
 
 export function getMergedReviews(): Review[] {
   const custom = getCustomReviews();
-  const staticFiltered = REVIEWS.filter(r => !custom.some(c => c.slug === r.slug));
+  const staticFiltered = REVIEWS.filter(
+    (r) => !custom.some((c) => c.slug === r.slug),
+  );
   return [...staticFiltered, ...custom];
 }
 
@@ -112,7 +112,7 @@ export function getCustomBlogPosts(): BlogPost[] {
 
 export function saveCustomBlogPost(post: BlogPost): void {
   const current = getCustomBlogPosts();
-  const index = current.findIndex(p => p.slug === post.slug);
+  const index = current.findIndex((p) => p.slug === post.slug);
   if (index >= 0) {
     current[index] = post; // Edit
   } else {
@@ -121,14 +121,36 @@ export function saveCustomBlogPost(post: BlogPost): void {
   setStorageItem(KEY_BLOGS, current);
 }
 
+export function saveCustomBlogPosts(posts: BlogPost[]): void {
+  if (posts.length === 0) return;
+
+  const current = getCustomBlogPosts();
+  const merged = new Map<string, BlogPost>();
+
+  current.forEach((post) => merged.set(post.slug, post));
+  posts.forEach((post) => merged.set(post.slug, post));
+
+  setStorageItem(KEY_BLOGS, Array.from(merged.values()));
+}
+
 export function deleteCustomBlogPost(slug: string): void {
   const current = getCustomBlogPosts();
-  const updated = current.filter(p => p.slug !== slug);
+  const updated = current.filter((p) => p.slug !== slug);
   setStorageItem(KEY_BLOGS, updated);
 }
 
 export function getMergedBlogPosts(): BlogPost[] {
   const custom = getCustomBlogPosts();
-  const staticFiltered = BLOG_POSTS.filter(p => !custom.some(c => c.slug === p.slug));
+  const staticFiltered = BLOG_POSTS.filter(
+    (p) => !custom.some((c) => c.slug === p.slug),
+  );
   return [...staticFiltered, ...custom];
+}
+
+export function getPublishedBlogPosts(): BlogPost[] {
+  return getPublishedBlogPostsByDate(getMergedBlogPosts());
+}
+
+export function getScheduledBlogPosts(): BlogPost[] {
+  return getScheduledBlogPostsByDate(getMergedBlogPosts());
 }

@@ -1,29 +1,24 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Link from 'next/link';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { AdContainer } from '@/components/AdContainer';
-import { SectionHeading } from '@/components/SectionHeading';
-import { 
-  Database, 
-  Layers, 
-  BookOpen, 
-  Plus, 
-  Trash2, 
-  Check, 
-  Download, 
-  RefreshCw, 
-  ArrowRight,
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { AdContainer } from "@/components/AdContainer";
+import {
+  Database,
+  Layers,
+  BookOpen,
+  Plus,
+  Trash2,
+  Download,
+  RefreshCw,
   Eye,
   Settings,
   HelpCircle,
   FileCheck,
-  AlertTriangle,
   Flame,
   CheckCircle2,
-  Calendar,
   Layers2,
   Lock,
   CloudLightning,
@@ -32,97 +27,136 @@ import {
   AlertCircle,
   Loader2,
   Zap,
-  BellRing
-} from 'lucide-react';
-import { 
-  Tool, 
-  Review, 
-  BlogPost, 
-  CATEGORIES,
-  CategorySlug
-} from '@/lib/data';
+} from "lucide-react";
+import { Tool, Review, BlogPost, CATEGORIES, CategorySlug } from "@/lib/data";
+import {
+  buildScheduledBlogPosts,
+  formatBlogPublicationDate,
+  getBlogPublicationTimestamp,
+  getScheduledBlogPosts,
+  getPublishedBlogPosts,
+  slugifyBlogText,
+  DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+} from "@/lib/blogSchedule";
 
-import AdminLogin from '@/components/AdminLogin';
-import { isSupabaseConfigured, getSupabaseClient } from '@/lib/supabase';
-import { pushLocalToSupabase, pullSupabaseToLocal } from '@/lib/supabaseDb';
+import AdminLogin from "@/components/AdminLogin";
+import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase";
+import { pushLocalToSupabase, pullSupabaseToLocal } from "@/lib/supabaseDb";
 
 export default function AdminPage() {
   // Administrative state checking & lockouts
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [syncLoading, setSyncLoading] = useState<boolean>(false);
-  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // Directly evaluate config parameter on-the-fly to prevent cascading state side-effects
   const supabaseActive = isSupabaseConfigured();
 
   // Navigation tab states
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tools' | 'reviews' | 'blog' | 'backend'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "tools" | "reviews" | "blog" | "backend"
+  >("dashboard");
 
   // Merged database lists loaded on-client on-mount
   const [toolsList, setToolsList] = useState<Tool[]>([]);
   const [reviewsList, setReviewsList] = useState<Review[]>([]);
   const [blogsList, setBlogsList] = useState<BlogPost[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Success state banners
   const [isSavedBanner, setIsSavedBanner] = useState<string | null>(null);
-  const [realtimeNotification, setRealtimeNotification] = useState<string | null>(null);
+  const [realtimeNotification, setRealtimeNotification] = useState<
+    string | null
+  >(null);
 
   // Form states: Tools
-  const [toolForm, setToolForm] = useState<Omit<Tool, 'category'> & { category: CategorySlug } & { iconUrl?: string }>({
-    slug: '',
-    name: '',
-    startingPrice: '$15/mo',
+  const [toolForm, setToolForm] = useState<
+    Omit<Tool, "category"> & { category: CategorySlug } & { iconUrl?: string }
+  >({
+    slug: "",
+    name: "",
+    startingPrice: "$15/mo",
     numericPrice: 15,
-    category: 'project-management',
-    oneLineOpinion: '',
-    iconUrl: ''
+    category: "project-management",
+    oneLineOpinion: "",
+    iconUrl: "",
   });
 
   // Form states: Reviews
-  const [reviewForm, setReviewForm] = useState<Omit<Review, 'tableRows' | 'category'> & { category: CategorySlug }>({
-    slug: '',
-    title: '',
-    toolA: '',
-    toolB: '',
-    category: 'project-management',
-    excerpt: '',
+  const [reviewForm, setReviewForm] = useState<
+    Omit<Review, "tableRows" | "category"> & { category: CategorySlug }
+  >({
+    slug: "",
+    title: "",
+    toolA: "",
+    toolB: "",
+    category: "project-management",
+    excerpt: "",
     readTimeMinutes: 5,
-    publicationDate: new Date().toISOString().split('T')[0],
-    verdict: 'editor-pick',
-    winnerSlug: '',
-    hotTakeQuote: '',
-    finalVerdictParagraph: '',
-    bestForA: '',
-    bestForB: ''
+    publicationDate: new Date().toISOString().split("T")[0],
+    verdict: "editor-pick",
+    winnerSlug: "",
+    hotTakeQuote: "",
+    finalVerdictParagraph: "",
+    bestForA: "",
+    bestForB: "",
   });
 
   // Review table rows builder sub-state
-  const [customTableRows, setCustomTableRows] = useState<{
-    feature: string;
-    valueA: string;
-    valueB: string;
-    winner: string;
-  }[]>([]);
+  const [customTableRows, setCustomTableRows] = useState<
+    {
+      feature: string;
+      valueA: string;
+      valueB: string;
+      winner: string;
+    }[]
+  >([]);
 
   const [newRowDraft, setNewRowDraft] = useState({
-    feature: '',
-    valueA: '',
-    valueB: '',
-    winner: ''
+    feature: "",
+    valueA: "",
+    valueB: "",
+    winner: "",
   });
 
   // Form states: Blogs
   const [blogForm, setBlogForm] = useState<BlogPost>({
-    slug: '',
-    title: '',
+    slug: "",
+    title: "",
     issueNumber: 43,
-    excerpt: '',
-    readTime: '6 min read',
-    publicationDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    category: 'Procurement Strategy',
-    contentMarkdown: ''
+    excerpt: "",
+    readTime: "6 min read",
+    publicationDate: new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    category: "Procurement Strategy",
+    contentMarkdown: "",
   });
+
+  const [bulkBlogDraftJson, setBulkBlogDraftJson] = useState<string>(`[
+  {
+    "title": "Why seat-based pricing is collapsing",
+    "excerpt": "The weekly procurement memo on usage-based billing.",
+    "category": "Procurement Strategy",
+    "readTime": "5 min read",
+    "contentMarkdown": "### What changed\n\nAdd your article copy here.",
+    "slug": "why-seat-based-pricing-is-collapsing"
+  }
+]`);
+  const [bulkBlogStartAt, setBulkBlogStartAt] = useState<string>(() => {
+    const now = new Date();
+    const offsetMinutes = now.getTimezoneOffset();
+    return new Date(now.getTime() - offsetMinutes * 60_000)
+      .toISOString()
+      .slice(0, 16);
+  });
+  const [bulkBlogIntervalHours, setBulkBlogIntervalHours] = useState<number>(
+    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+  );
 
   // Blog markdown live preview mode
   const [blogPreviewMode, setBlogPreviewMode] = useState<boolean>(false);
@@ -132,22 +166,21 @@ export default function AdminPage() {
 
   useEffect(() => {
     let active = true;
-    import('@/lib/clientDb').then((db) => {
+    import("@/lib/clientDb").then((db) => {
       if (!active) return;
       setToolsList(db.getMergedTools());
       setReviewsList(db.getMergedReviews());
       setBlogsList(db.getMergedBlogPosts());
-      
+
       const mergedT = db.getMergedTools();
       if (mergedT.length >= 2) {
-        setReviewForm(prev => ({
+        setReviewForm((prev) => ({
           ...prev,
           toolA: mergedT[0].slug,
           toolB: mergedT[1].slug,
-          winnerSlug: mergedT[0].slug
+          winnerSlug: mergedT[0].slug,
         }));
       }
-      setIsLoading(false);
     });
     return () => {
       active = false;
@@ -156,7 +189,7 @@ export default function AdminPage() {
 
   // Method to trigger a dynamic data reload
   const loadDatabase = () => {
-    setReloadTrigger(prev => prev + 1);
+    setReloadTrigger((prev) => prev + 1);
   };
 
   // Real-time Supabase active replication subscription
@@ -169,19 +202,21 @@ export default function AdminPage() {
     let active = true;
     let channel: any = null;
 
-    import('@/lib/clientDb').then((db) => {
+    import("@/lib/clientDb").then((db) => {
       if (!active) return;
 
       channel = supabase
-        .channel('realtime_saasrooms_changes')
+        .channel("realtime_saasrooms_changes")
         .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'saas_tools' },
+          "postgres_changes",
+          { event: "*", schema: "public", table: "saas_tools" },
           (payload: any) => {
-            if (payload.eventType === 'DELETE') {
+            if (payload.eventType === "DELETE") {
               if (payload.old?.slug) {
                 db.deleteCustomTool(payload.old.slug);
-                setRealtimeNotification(`Real-time Cloud Event: Removed tool row "${payload.old.slug}"`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Removed tool row "${payload.old.slug}"`,
+                );
               }
             } else {
               const t = payload.new;
@@ -189,25 +224,29 @@ export default function AdminPage() {
                 db.saveCustomTool({
                   slug: t.slug,
                   name: t.name,
-                  startingPrice: t.starting_price || '',
+                  startingPrice: t.starting_price || "",
                   numericPrice: Number(t.numeric_price || 0),
                   category: t.category,
-                  oneLineOpinion: t.one_line_opinion || ''
+                  oneLineOpinion: t.one_line_opinion || "",
                 });
-                setRealtimeNotification(`Real-time Cloud Event: Synchronized tool "${t.name}"`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Synchronized tool "${t.name}"`,
+                );
               }
             }
             loadDatabase();
-          }
+          },
         )
         .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'saas_reviews' },
+          "postgres_changes",
+          { event: "*", schema: "public", table: "saas_reviews" },
           (payload: any) => {
-            if (payload.eventType === 'DELETE') {
+            if (payload.eventType === "DELETE") {
               if (payload.old?.slug) {
                 db.deleteCustomReview(payload.old.slug);
-                setRealtimeNotification(`Real-time Cloud Event: Removed comparison matrix "${payload.old.slug}"`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Removed comparison matrix "${payload.old.slug}"`,
+                );
               }
             } else {
               const r = payload.new;
@@ -218,31 +257,35 @@ export default function AdminPage() {
                   toolA: r.tool_a,
                   toolB: r.tool_b,
                   category: r.category,
-                  excerpt: r.excerpt || '',
+                  excerpt: r.excerpt || "",
                   readTimeMinutes: Number(r.read_time_minutes || 5),
                   publicationDate: r.publication_date,
-                  verdict: r.verdict || 'editor-pick',
-                  winnerSlug: r.winner_slug || '',
-                  hotTakeQuote: r.hot_take_quote || '',
-                  finalVerdictParagraph: r.final_verdict_paragraph || '',
-                  bestForA: r.best_for_a || '',
-                  bestForB: r.best_for_b || '',
-                  tableRows: r.table_rows || []
+                  verdict: r.verdict || "editor-pick",
+                  winnerSlug: r.winner_slug || "",
+                  hotTakeQuote: r.hot_take_quote || "",
+                  finalVerdictParagraph: r.final_verdict_paragraph || "",
+                  bestForA: r.best_for_a || "",
+                  bestForB: r.best_for_b || "",
+                  tableRows: r.table_rows || [],
                 });
-                setRealtimeNotification(`Real-time Cloud Event: Synchronized review "${r.title}"`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Synchronized review "${r.title}"`,
+                );
               }
             }
             loadDatabase();
-          }
+          },
         )
         .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'saas_blog_posts' },
+          "postgres_changes",
+          { event: "*", schema: "public", table: "saas_blog_posts" },
           (payload: any) => {
-            if (payload.eventType === 'DELETE') {
+            if (payload.eventType === "DELETE") {
               if (payload.old?.slug) {
                 db.deleteCustomBlogPost(payload.old.slug);
-                setRealtimeNotification(`Real-time Cloud Event: Removed blog issue "${payload.old.slug}"`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Removed blog issue "${payload.old.slug}"`,
+                );
               }
             } else {
               const b = payload.new;
@@ -251,20 +294,25 @@ export default function AdminPage() {
                   slug: b.slug,
                   title: b.title,
                   issueNumber: Number(b.issue_number || 43),
-                  excerpt: b.excerpt || '',
-                  readTime: b.read_time || '5 min read',
+                  excerpt: b.excerpt || "",
+                  readTime: b.read_time || "5 min read",
                   publicationDate: b.publication_date,
                   category: b.category,
-                  contentMarkdown: b.content_markdown || ''
+                  contentMarkdown: b.content_markdown || "",
                 });
-                setRealtimeNotification(`Real-time Cloud Event: Synchronized newsletter issue #${b.issue_number}`);
+                setRealtimeNotification(
+                  `Real-time Cloud Event: Synchronized newsletter issue #${b.issue_number}`,
+                );
               }
             }
             loadDatabase();
-          }
+          },
         )
         .subscribe((status) => {
-          console.log('Supabase Postgres Realtime Subscription status:', status);
+          console.log(
+            "Supabase Postgres Realtime Subscription status:",
+            status,
+          );
         });
     });
 
@@ -272,7 +320,7 @@ export default function AdminPage() {
       active = false;
       if (channel && supabase) {
         supabase.removeChannel(channel).catch((err) => {
-          console.warn('Error clearing realtime channel:', err);
+          console.warn("Error clearing realtime channel:", err);
         });
       }
     };
@@ -289,19 +337,19 @@ export default function AdminPage() {
   }, [realtimeNotification]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const auth = window.localStorage.getItem('saasrooms-admin-authenticated');
+    if (typeof window !== "undefined") {
+      const auth = window.localStorage.getItem("saasrooms-admin-authenticated");
       // Deferred execution to prevent synchronous state cycles inside mounting bodies
       Promise.resolve().then(() => {
-        setIsAuthenticated(auth === 'true');
+        setIsAuthenticated(auth === "true");
       });
     }
   }, []);
 
   const handleSignOut = () => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('saasrooms-admin-authenticated');
-      window.localStorage.removeItem('saasrooms-admin-provider');
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("saasrooms-admin-authenticated");
+      window.localStorage.removeItem("saasrooms-admin-provider");
     }
     const supabase = getSupabaseClient();
     if (supabase) {
@@ -317,10 +365,15 @@ export default function AdminPage() {
       const result = await pushLocalToSupabase();
       setSyncFeedback(result);
       if (result.success) {
-        triggerSuccessAlert('Successfully pushed local storage index elements to Supabase rows.');
+        triggerSuccessAlert(
+          "Successfully pushed local storage index elements to Supabase rows.",
+        );
       }
     } catch (e: any) {
-      setSyncFeedback({ success: false, message: e.message || 'Push sync sequence error.' });
+      setSyncFeedback({
+        success: false,
+        message: e.message || "Push sync sequence error.",
+      });
     } finally {
       setSyncLoading(false);
     }
@@ -334,10 +387,15 @@ export default function AdminPage() {
       setSyncFeedback(result);
       if (result.success) {
         loadDatabase();
-        triggerSuccessAlert('Sync pulled successfully! Overlaid local browser nodes.');
+        triggerSuccessAlert(
+          "Sync pulled successfully! Overlaid local browser nodes.",
+        );
       }
     } catch (e: any) {
-      setSyncFeedback({ success: false, message: e.message || 'Pull sync sequence error.' });
+      setSyncFeedback({
+        success: false,
+        message: e.message || "Pull sync sequence error.",
+      });
     } finally {
       setSyncLoading(false);
     }
@@ -355,9 +413,83 @@ export default function AdminPage() {
   const autoSlugify = (text: string): string => {
     return text
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // Remove invalid chars
-      .replace(/[\s_]+/g, '-')   // Replace spaces with hyphen
-      .replace(/^-+|-+$/g, '');  // Trim hyphens
+      .replace(/[^\w\s-]/g, "") // Remove invalid chars
+      .replace(/[\s_]+/g, "-") // Replace spaces with hyphen
+      .replace(/^-+|-+$/g, ""); // Trim hyphens
+  };
+
+  const parseBulkBlogDrafts = (): {
+    drafts: BlogPost[];
+    error: string | null;
+  } => {
+    try {
+      const parsed = JSON.parse(bulkBlogDraftJson);
+
+      if (!Array.isArray(parsed)) {
+        return {
+          drafts: [],
+          error: "Bulk input must be a JSON array of article objects.",
+        };
+      }
+
+      const normalized = parsed.map((item: any, index: number) => {
+        const title = String(item?.title || "").trim();
+        const excerpt = String(item?.excerpt || "").trim();
+        const category = String(item?.category || "").trim();
+        const contentMarkdown = String(item?.contentMarkdown || "").trim();
+
+        if (!title || !excerpt || !category || !contentMarkdown) {
+          throw new Error(
+            `Row ${index + 1} is missing title, excerpt, category, or contentMarkdown.`,
+          );
+        }
+
+        return {
+          title,
+          slug: String(item?.slug || "").trim() || slugifyBlogText(title),
+          excerpt,
+          category,
+          readTime: String(item?.readTime || "5 min read").trim(),
+          contentMarkdown,
+          issueNumber: Number(item?.issueNumber) || undefined,
+        };
+      });
+
+      const startAt = new Date(bulkBlogStartAt);
+      if (Number.isNaN(startAt.getTime())) {
+        return { drafts: [], error: "Bulk start date is invalid." };
+      }
+
+      const startingIssueNumber =
+        Math.max(
+          42,
+          ...blogsList.map((post) => Number(post.issueNumber) || 0),
+        ) + 1;
+      const scheduledDrafts = buildScheduledBlogPosts(
+        normalized,
+        startAt,
+        bulkBlogIntervalHours || DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+        startingIssueNumber,
+      );
+
+      return { drafts: scheduledDrafts, error: null };
+    } catch (error: any) {
+      return {
+        drafts: [],
+        error: error?.message || "Unable to parse the bulk blog queue payload.",
+      };
+    }
+  };
+
+  const getBlogScheduleStatus = (post: BlogPost) => {
+    const timestamp = getBlogPublicationTimestamp(post.publicationDate);
+    const isFuture = timestamp !== null && timestamp > Date.now();
+
+    return {
+      isFuture,
+      label: isFuture ? "Scheduled" : "Published",
+      formattedDate: formatBlogPublicationDate(post.publicationDate),
+    };
   };
 
   /* ==========================================
@@ -369,20 +501,22 @@ export default function AdminPage() {
     e.preventDefault();
     if (!toolForm.slug || !toolForm.name) return;
 
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.saveCustomTool(toolForm as Tool);
-    
-    triggerSuccessAlert(`Tool "${toolForm.name}" compiled and saved into the index database!`);
-    
+
+    triggerSuccessAlert(
+      `Tool "${toolForm.name}" compiled and saved into the index database!`,
+    );
+
     // Clear Form
     setToolForm({
-      slug: '',
-      name: '',
-      startingPrice: '$15/mo',
+      slug: "",
+      name: "",
+      startingPrice: "$15/mo",
       numericPrice: 15,
-      category: 'project-management',
-      oneLineOpinion: '',
-      iconUrl: ''
+      category: "project-management",
+      oneLineOpinion: "",
+      iconUrl: "",
     });
 
     loadDatabase();
@@ -390,22 +524,28 @@ export default function AdminPage() {
 
   // Delete Tool Action
   const handleDeleteTool = async (slug: string) => {
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.deleteCustomTool(slug);
-    triggerSuccessAlert('Tool removed successfully!');
+    triggerSuccessAlert("Tool removed successfully!");
     loadDatabase();
   };
 
   // Add Comparative Row to draft
   const handleAddTableRow = () => {
-    if (!newRowDraft.feature || !newRowDraft.valueA || !newRowDraft.valueB || !newRowDraft.winner) return;
-    setCustomTableRows(prev => [...prev, newRowDraft]);
-    setNewRowDraft({ feature: '', valueA: '', valueB: '', winner: '' });
+    if (
+      !newRowDraft.feature ||
+      !newRowDraft.valueA ||
+      !newRowDraft.valueB ||
+      !newRowDraft.winner
+    )
+      return;
+    setCustomTableRows((prev) => [...prev, newRowDraft]);
+    setNewRowDraft({ feature: "", valueA: "", valueB: "", winner: "" });
   };
 
   // Remove Comparative Row from draft
   const handleRemoveTableRow = (idx: number) => {
-    setCustomTableRows(prev => prev.filter((_, i) => i !== idx));
+    setCustomTableRows((prev) => prev.filter((_, i) => i !== idx));
   };
 
   // Save Review Action
@@ -415,30 +555,30 @@ export default function AdminPage() {
 
     const completeReview: Review = {
       ...reviewForm,
-      tableRows: customTableRows
+      tableRows: customTableRows,
     };
 
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.saveCustomReview(completeReview);
-    
+
     triggerSuccessAlert(`Review matrix "${reviewForm.title}" synchronized!`);
-    
+
     // Clear
     setReviewForm({
-      slug: '',
-      title: '',
-      toolA: toolsList[0]?.slug || '',
-      toolB: toolsList[1]?.slug || '',
-      category: 'project-management',
-      excerpt: '',
+      slug: "",
+      title: "",
+      toolA: toolsList[0]?.slug || "",
+      toolB: toolsList[1]?.slug || "",
+      category: "project-management",
+      excerpt: "",
       readTimeMinutes: 5,
-      publicationDate: new Date().toISOString().split('T')[0],
-      verdict: 'editor-pick',
-      winnerSlug: toolsList[0]?.slug || '',
-      hotTakeQuote: '',
-      finalVerdictParagraph: '',
-      bestForA: '',
-      bestForB: ''
+      publicationDate: new Date().toISOString().split("T")[0],
+      verdict: "editor-pick",
+      winnerSlug: toolsList[0]?.slug || "",
+      hotTakeQuote: "",
+      finalVerdictParagraph: "",
+      bestForA: "",
+      bestForB: "",
     });
     setCustomTableRows([]);
 
@@ -447,9 +587,9 @@ export default function AdminPage() {
 
   // Delete Review Action
   const handleDeleteReview = async (slug: string) => {
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.deleteCustomReview(slug);
-    triggerSuccessAlert('Comparison Review list entry wiped!');
+    triggerSuccessAlert("Comparison Review list entry wiped!");
     loadDatabase();
   };
 
@@ -458,31 +598,64 @@ export default function AdminPage() {
     e.preventDefault();
     if (!blogForm.slug || !blogForm.title) return;
 
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.saveCustomBlogPost(blogForm);
-    
-    triggerSuccessAlert(`BlogPost essay Issue #${blogForm.issueNumber} successfully published!`);
-    
+
+    triggerSuccessAlert(
+      `BlogPost essay Issue #${blogForm.issueNumber} successfully published!`,
+    );
+
     // Clear
     setBlogForm({
-      slug: '',
-      title: '',
+      slug: "",
+      title: "",
       issueNumber: blogsList.length + 43,
-      excerpt: '',
-      readTime: '6 min read',
-      publicationDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      category: 'Procurement Strategy',
-      contentMarkdown: ''
+      excerpt: "",
+      readTime: "6 min read",
+      publicationDate: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      category: "Procurement Strategy",
+      contentMarkdown: "",
     });
 
     loadDatabase();
   };
 
+  const handleSaveBulkBlogQueue = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const parsed = parseBulkBlogDrafts();
+    if (parsed.error) {
+      triggerSuccessAlert(parsed.error);
+      return;
+    }
+
+    if (parsed.drafts.length === 0) {
+      triggerSuccessAlert(
+        "Bulk queue is empty. Add at least one article draft.",
+      );
+      return;
+    }
+
+    const db = await import("@/lib/clientDb");
+    db.saveCustomBlogPosts(parsed.drafts);
+
+    triggerSuccessAlert(
+      `Queued ${parsed.drafts.length} articles. Each post is spaced ${bulkBlogIntervalHours} hours apart starting ${formatBlogPublicationDate(parsed.drafts[0].publicationDate)}.`,
+    );
+
+    setBulkBlogDraftJson("[]");
+    loadDatabase();
+  };
+
   // Delete Blog Action
   const handleDeleteBlog = async (slug: string) => {
-    const db = await import('@/lib/clientDb');
+    const db = await import("@/lib/clientDb");
     db.deleteCustomBlogPost(slug);
-    triggerSuccessAlert('Article post removed from dispatch listings!');
+    triggerSuccessAlert("Article post removed from dispatch listings!");
     loadDatabase();
   };
 
@@ -492,13 +665,18 @@ export default function AdminPage() {
       categories: CATEGORIES,
       tools: toolsList,
       reviews: reviewsList,
-      blog_posts: blogsList
+      blog_posts: blogsList,
     };
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
-    const downloadAnchor = document.createElement('a');
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(backup, null, 2));
+    const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", "saasrooms_complete_database_backup.json");
+    downloadAnchor.setAttribute(
+      "download",
+      "saasrooms_complete_database_backup.json",
+    );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -506,8 +684,22 @@ export default function AdminPage() {
 
   // Dynamic values computation for overall stats
   const dashboardStats = useMemo(() => {
-    const userCreatedToolsCount = toolsList.filter(t => !['quickbooks', 'freshbooks', 'asana', 'clickup', 'salesforce', 'hubspot', 'monday', 'jira'].includes(t.slug)).length;
-    const userCreatedReviewsCount = reviewsList.filter(r => !['quickbooks-vs-freshbooks', 'asana-vs-clickup'].includes(r.slug)).length;
+    const userCreatedToolsCount = toolsList.filter(
+      (t) =>
+        ![
+          "quickbooks",
+          "freshbooks",
+          "asana",
+          "clickup",
+          "salesforce",
+          "hubspot",
+          "monday",
+          "jira",
+        ].includes(t.slug),
+    ).length;
+    const userCreatedReviewsCount = reviewsList.filter(
+      (r) => !["quickbooks-vs-freshbooks", "asana-vs-clickup"].includes(r.slug),
+    ).length;
 
     return {
       totalTools: toolsList.length,
@@ -515,9 +707,33 @@ export default function AdminPage() {
       totalReviews: reviewsList.length,
       customReviews: userCreatedReviewsCount,
       totalBlogs: blogsList.length,
-      customBlogs: blogsList.filter(b => !['the-death-of-unlimited-seats', 'demystifying-gaap-ledgers'].includes(b.slug)).length,
+      customBlogs: blogsList.filter(
+        (b) =>
+          ![
+            "the-death-of-unlimited-seats",
+            "demystifying-gaap-ledgers",
+          ].includes(b.slug),
+      ).length,
     };
   }, [toolsList, reviewsList, blogsList]);
+
+  const sortedBlogsList = useMemo(() => {
+    return [...blogsList].sort((left, right) => {
+      const leftTimestamp =
+        getBlogPublicationTimestamp(left.publicationDate) ?? 0;
+      const rightTimestamp =
+        getBlogPublicationTimestamp(right.publicationDate) ?? 0;
+      return rightTimestamp - leftTimestamp;
+    });
+  }, [blogsList]);
+
+  const scheduledBlogsCount = useMemo(() => {
+    return getScheduledBlogPosts(blogsList).length;
+  }, [blogsList]);
+
+  const publishedBlogsCount = useMemo(() => {
+    return getPublishedBlogPosts(blogsList).length;
+  }, [blogsList]);
 
   // Auto-fill form values on click triggers to ease editing tasks
   const editToolInForm = (tool: Tool) => {
@@ -527,9 +743,9 @@ export default function AdminPage() {
       startingPrice: tool.startingPrice,
       numericPrice: tool.numericPrice,
       category: tool.category,
-      oneLineOpinion: tool.oneLineOpinion
+      oneLineOpinion: tool.oneLineOpinion,
     });
-    setActiveTab('tools');
+    setActiveTab("tools");
   };
 
   const editReviewInForm = (review: Review) => {
@@ -542,20 +758,20 @@ export default function AdminPage() {
       excerpt: review.excerpt,
       readTimeMinutes: review.readTimeMinutes,
       publicationDate: review.publicationDate,
-      verdict: review.verdict || 'editor-pick',
-      winnerSlug: review.winnerSlug || '',
+      verdict: review.verdict || "editor-pick",
+      winnerSlug: review.winnerSlug || "",
       hotTakeQuote: review.hotTakeQuote,
       finalVerdictParagraph: review.finalVerdictParagraph,
       bestForA: review.bestForA,
-      bestForB: review.bestForB
+      bestForB: review.bestForB,
     });
     setCustomTableRows(review.tableRows || []);
-    setActiveTab('reviews');
+    setActiveTab("reviews");
   };
 
   const editBlogInForm = (blog: BlogPost) => {
     setBlogForm(blog);
-    setActiveTab('blog');
+    setActiveTab("blog");
   };
 
   // 1. Loading token state hydration
@@ -579,7 +795,6 @@ export default function AdminPage() {
 
       <main id="admin-panel-root" className="flex-grow py-12 font-sans px-4">
         <div className="max-w-7xl mx-auto">
-          
           {/* Headline and introduction badge */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-6 mb-8 gap-4">
             <div>
@@ -591,7 +806,9 @@ export default function AdminPage() {
                 SaaSRooms Workspace
               </h1>
               <p className="text-xs text-slate-500 mt-1.5 max-w-xl">
-                Add reviews, create tools, draft markdown blog dispatches, and manage memory overlays dynamically with zero compilation waiting pools.
+                Add reviews, create tools, draft markdown blog dispatches, and
+                manage memory overlays dynamically with zero compilation waiting
+                pools.
               </p>
             </div>
 
@@ -606,7 +823,7 @@ export default function AdminPage() {
                 <Download className="h-4 w-4 text-blue-600" />
                 <span>Export Dataset JSON</span>
               </button>
-              
+
               <button
                 onClick={loadDatabase}
                 className="p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 hover:text-blue-600 shadow-xs transition-colors cursor-pointer"
@@ -634,8 +851,8 @@ export default function AdminPage() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 <span>{isSavedBanner}</span>
               </div>
-              <button 
-                onClick={() => setIsSavedBanner(null)} 
+              <button
+                onClick={() => setIsSavedBanner(null)}
                 className="text-xs font-semibold text-emerald-600 hover:text-emerald-800"
               >
                 Dismiss
@@ -654,8 +871,8 @@ export default function AdminPage() {
                 <Zap className="h-4.5 w-4.5 text-blue-600 fill-blue-100" />
                 <span>{realtimeNotification}</span>
               </div>
-              <button 
-                onClick={() => setRealtimeNotification(null)} 
+              <button
+                onClick={() => setRealtimeNotification(null)}
                 className="text-xs font-extrabold uppercase tracking-wide text-blue-600 hover:text-blue-800"
               >
                 Dismiss
@@ -665,16 +882,15 @@ export default function AdminPage() {
 
           {/* Divided Interface Side Navigation + Form body */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
             {/* Left rail navigation: 3 / 12 width */}
             <aside className="lg:col-span-3 space-y-2">
               <button
                 id="tab-dashboard-selector"
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => setActiveTab("dashboard")}
                 className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
-                  activeTab === 'dashboard'
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-605 hover:bg-slate-50'
+                  activeTab === "dashboard"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                    : "bg-white border-slate-200 text-slate-605 hover:bg-slate-50"
                 }`}
               >
                 <Layers className="h-4 w-4" />
@@ -683,11 +899,11 @@ export default function AdminPage() {
 
               <button
                 id="tab-tools-selector"
-                onClick={() => setActiveTab('tools')}
+                onClick={() => setActiveTab("tools")}
                 className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
-                  activeTab === 'tools'
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-605 hover:bg-slate-50'
+                  activeTab === "tools"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                    : "bg-white border-slate-200 text-slate-605 hover:bg-slate-50"
                 }`}
               >
                 <Layers2 className="h-4 w-4" />
@@ -696,11 +912,11 @@ export default function AdminPage() {
 
               <button
                 id="tab-reviews-selector"
-                onClick={() => setActiveTab('reviews')}
+                onClick={() => setActiveTab("reviews")}
                 className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
-                  activeTab === 'reviews'
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-605 hover:bg-slate-50'
+                  activeTab === "reviews"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                    : "bg-white border-slate-200 text-slate-605 hover:bg-slate-50"
                 }`}
               >
                 <FileCheck className="h-4 w-4" />
@@ -709,11 +925,11 @@ export default function AdminPage() {
 
               <button
                 id="tab-blog-selector"
-                onClick={() => setActiveTab('blog')}
+                onClick={() => setActiveTab("blog")}
                 className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
-                  activeTab === 'blog'
-                    ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-605 hover:bg-slate-50'
+                  activeTab === "blog"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                    : "bg-white border-slate-200 text-slate-605 hover:bg-slate-50"
                 }`}
               >
                 <BookOpen className="h-4 w-4" />
@@ -722,11 +938,11 @@ export default function AdminPage() {
 
               <button
                 id="tab-backend-selector"
-                onClick={() => setActiveTab('backend')}
+                onClick={() => setActiveTab("backend")}
                 className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
-                  activeTab === 'backend'
-                    ? 'bg-rose-600 border-rose-600 text-white shadow-xs font-black animate-pulse'
-                    : 'bg-white border-rose-200 text-slate-700 hover:bg-slate-50'
+                  activeTab === "backend"
+                    ? "bg-rose-600 border-rose-600 text-white shadow-xs font-black animate-pulse"
+                    : "bg-white border-rose-200 text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 <Database className="h-4 w-4" />
@@ -740,25 +956,33 @@ export default function AdminPage() {
                   Workspace Mechanics
                 </h4>
                 <p className="leading-relaxed">
-                  Baselines are pulled statically from <code>lib/data.ts</code>. Editing existing entries or creating new items overlays metadata inside <strong>localStorage</strong>.
+                  Baselines are pulled statically from <code>lib/data.ts</code>.
+                  Editing existing entries or creating new items overlays
+                  metadata inside <strong>localStorage</strong>.
                 </p>
                 <p className="leading-relaxed">
-                  These changes override baseline parameters instantly on your local web browser, matching Next.js router boundaries perfectly.
+                  These changes override baseline parameters instantly on your
+                  local web browser, matching Next.js router boundaries
+                  perfectly.
                 </p>
               </div>
             </aside>
 
             {/* Forms body container: 9 / 12 width */}
             <div className="lg:col-span-9 bg-white border border-slate-200 rounded-2xl p-6 min-h-[500px] shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
-              
               {/* ==================================================
                  TAB 1: OVERVIEW DASHBOARD
                  ================================================== */}
-              {activeTab === 'dashboard' && (
+              {activeTab === "dashboard" && (
                 <div className="space-y-8 animate-fade-in">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">System Status Metrics</h2>
-                    <p className="text-xs text-slate-500">Live counts of aggregated database nodes currently operational in the sandbox viewport loop.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      System Status Metrics
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Live counts of aggregated database nodes currently
+                      operational in the sandbox viewport loop.
+                    </p>
                   </div>
 
                   {/* Quantitative Counters Grid */}
@@ -768,8 +992,12 @@ export default function AdminPage() {
                       <span className="block text-2xl font-black text-slate-950 font-mono">
                         {dashboardStats.totalTools}
                       </span>
-                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">Total Tools Index</span>
-                      <span className="block text-[10px] text-slate-400 mt-0.5">{dashboardStats.customTools} Custom additions</span>
+                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">
+                        Total Tools Index
+                      </span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        {dashboardStats.customTools} Custom additions
+                      </span>
                     </div>
 
                     {/* Metrics 2 */}
@@ -777,8 +1005,12 @@ export default function AdminPage() {
                       <span className="block text-2xl font-black text-slate-950 font-mono">
                         {dashboardStats.totalReviews}
                       </span>
-                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">Aggregated Matrices</span>
-                      <span className="block text-[10px] text-slate-400 mt-0.5">{dashboardStats.customReviews} Custom reviews</span>
+                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">
+                        Aggregated Matrices
+                      </span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        {dashboardStats.customReviews} Custom reviews
+                      </span>
                     </div>
 
                     {/* Metrics 3 */}
@@ -786,8 +1018,12 @@ export default function AdminPage() {
                       <span className="block text-2xl font-black text-slate-950 font-mono">
                         {dashboardStats.totalBlogs}
                       </span>
-                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">Dispatch issues</span>
-                      <span className="block text-[10px] text-slate-400 mt-0.5">{dashboardStats.customBlogs} Custom articles</span>
+                      <span className="block text-xs font-bold text-slate-700 mt-1 uppercase tracking-wider font-mono">
+                        Dispatch issues
+                      </span>
+                      <span className="block text-[10px] text-slate-400 mt-0.5">
+                        {dashboardStats.customBlogs} Custom articles
+                      </span>
                     </div>
                   </div>
 
@@ -796,30 +1032,49 @@ export default function AdminPage() {
                     <div className="bg-slate-50 border-b border-slate-150 p-3.5 font-bold text-slate-800 uppercase tracking-wider">
                       Sandboxes Routing Integrations checks
                     </div>
-                    
+
                     <div className="divide-y divide-slate-100">
                       <div className="p-3.5 flex items-center justify-between gap-4">
                         <div>
-                          <strong className="block text-slate-800">Hompage State Integration</strong>
-                          <span className="text-[11px] text-slate-400 leading-normal">Pulls review cards from local storage dynamic pools.</span>
+                          <strong className="block text-slate-800">
+                            Hompage State Integration
+                          </strong>
+                          <span className="text-[11px] text-slate-400 leading-normal">
+                            Pulls review cards from local storage dynamic pools.
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">ACTIVE</span>
+                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">
+                          ACTIVE
+                        </span>
                       </div>
 
                       <div className="p-3.5 flex items-center justify-between gap-4">
                         <div>
-                          <strong className="block text-slate-800">Dynamic Reviews Route (<code>/reviews/[slug]</code>)</strong>
-                          <span className="text-[11px] text-slate-400 leading-normal">Client hydrations allow newly produced comparison pages.</span>
+                          <strong className="block text-slate-800">
+                            Dynamic Reviews Route (<code>/reviews/[slug]</code>)
+                          </strong>
+                          <span className="text-[11px] text-slate-400 leading-normal">
+                            Client hydrations allow newly produced comparison
+                            pages.
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">ACTIVE</span>
+                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">
+                          ACTIVE
+                        </span>
                       </div>
 
                       <div className="p-3.5 flex items-center justify-between gap-4">
                         <div>
-                          <strong className="block text-slate-800">The Dispatch Route (<code>/blog/[slug]</code>)</strong>
-                          <span className="text-[11px] text-slate-400 leading-normal">Reads custom articles with markdown split engines.</span>
+                          <strong className="block text-slate-800">
+                            The Dispatch Route (<code>/blog/[slug]</code>)
+                          </strong>
+                          <span className="text-[11px] text-slate-400 leading-normal">
+                            Reads custom articles with markdown split engines.
+                          </span>
                         </div>
-                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">ACTIVE</span>
+                        <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded font-mono">
+                          ACTIVE
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -831,9 +1086,15 @@ export default function AdminPage() {
                       Active Checkout Simulation
                     </h4>
                     <p className="text-slate-650 leading-relaxed">
-                      All CTAs on pricing lists dynamically map server-side checkout redirect routes. Lacking active keys, checkouts fall back automatically into the local sandbox successfully, completely secure with zero SDK crashes!
+                      All CTAs on pricing lists dynamically map server-side
+                      checkout redirect routes. Lacking active keys, checkouts
+                      fall back automatically into the local sandbox
+                      successfully, completely secure with zero SDK crashes!
                     </p>
-                    <Link href="/subscribe/sandbox-success" className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1 mt-1 transition-all">
+                    <Link
+                      href="/subscribe/sandbox-success"
+                      className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1 mt-1 transition-all"
+                    >
                       <span>View sandbox checkout viewport &rarr;</span>
                     </Link>
                   </div>
@@ -843,23 +1104,32 @@ export default function AdminPage() {
               {/* ==================================================
                  TAB 2: MANAGE TOOLS
                  ================================================= */}
-              {activeTab === 'tools' && (
+              {activeTab === "tools" && (
                 <div className="space-y-8 animate-fade-in">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Manage software index pool</h2>
-                    <p className="text-xs text-slate-500">Edit starting price index points and character opinions.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      Manage software index pool
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Edit starting price index points and character opinions.
+                    </p>
                   </div>
 
                   {/* Addition Form */}
-                  <form onSubmit={handleSaveTool} className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs">
+                  <form
+                    onSubmit={handleSaveTool}
+                    className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
+                  >
                     <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-wide">
                       Add / Edit Tool Entry
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Name input */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Tool Name:</label>
+                        <label className="block font-bold text-slate-700">
+                          Tool Name:
+                        </label>
                         <input
                           type="text"
                           required
@@ -867,10 +1137,10 @@ export default function AdminPage() {
                           value={toolForm.name}
                           onChange={(e) => {
                             const nameStr = e.target.value;
-                            setToolForm(prev => ({
+                            setToolForm((prev) => ({
                               ...prev,
                               name: nameStr,
-                              slug: autoSlugify(nameStr)
+                              slug: autoSlugify(nameStr),
                             }));
                           }}
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800 placeholder-slate-400"
@@ -879,43 +1149,61 @@ export default function AdminPage() {
 
                       {/* Slug output (auto generated) */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-500">Dynamic URL Slug (Auto):</label>
+                        <label className="block font-bold text-slate-500">
+                          Dynamic URL Slug (Auto):
+                        </label>
                         <input
                           type="text"
                           required
                           value={toolForm.slug}
-                          onChange={(e) => setToolForm(prev => ({ ...prev, slug: autoSlugify(e.target.value) }))}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              slug: autoSlugify(e.target.value),
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-slate-100 rounded-lg font-mono text-[11px]"
                         />
                       </div>
 
                       {/* Category select */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Vertical Category:</label>
+                        <label className="block font-bold text-slate-700">
+                          Vertical Category:
+                        </label>
                         <select
                           value={toolForm.category}
-                          onChange={(e) => setToolForm(prev => ({ ...prev, category: e.target.value as CategorySlug }))}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              category: e.target.value as CategorySlug,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
-                          {CATEGORIES.map(c => (
-                            <option key={c.slug} value={c.slug}>{c.name}</option>
+                          {CATEGORIES.map((c) => (
+                            <option key={c.slug} value={c.slug}>
+                              {c.name}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* Numeric Price */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-750">Starting Monthly price (numeric for TCO cost logic):</label>
+                        <label className="block font-bold text-slate-750">
+                          Starting Monthly price (numeric for TCO cost logic):
+                        </label>
                         <input
                           type="number"
                           required
                           value={toolForm.numericPrice}
                           onChange={(e) => {
                             const num = parseFloat(e.target.value) || 0;
-                            setToolForm(prev => ({
+                            setToolForm((prev) => ({
                               ...prev,
                               numericPrice: num,
-                              startingPrice: `$${num}/mo`
+                              startingPrice: `$${num}/mo`,
                             }));
                           }}
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
@@ -926,8 +1214,13 @@ export default function AdminPage() {
                     {/* OneLine opinion text */}
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <label className="block font-bold text-slate-700">One Line Opinion:</label>
-                        <span className="text-[10px] text-slate-400 font-mono">Limit target: {toolForm.oneLineOpinion.length} / 160 chars</span>
+                        <label className="block font-bold text-slate-700">
+                          One Line Opinion:
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Limit target: {toolForm.oneLineOpinion.length} / 160
+                          chars
+                        </span>
                       </div>
                       <input
                         type="text"
@@ -935,18 +1228,27 @@ export default function AdminPage() {
                         maxLength={160}
                         placeholder="e.g. Intuitive sprint roadmap structures with fast layouts at the cost of occasional latency fatigue."
                         value={toolForm.oneLineOpinion}
-                        onChange={(e) => setToolForm(prev => ({ ...prev, oneLineOpinion: e.target.value }))}
+                        onChange={(e) =>
+                          setToolForm((prev) => ({
+                            ...prev,
+                            oneLineOpinion: e.target.value,
+                          }))
+                        }
                         className="w-full p-2 border border-slate-250 bg-white rounded-lg text-xs"
                       />
                     </div>
 
                     {/* Product Icon Selection */}
                     <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">Product Brand Icon:</label>
+                      <label className="block font-bold text-slate-700">
+                        Product Brand Icon:
+                      </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 p-3 border border-slate-200 rounded-xl items-center">
                         {/* File Uploader */}
                         <div className="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200">
-                          <span className="block text-[10px] text-slate-500 font-mono font-bold uppercase">Upload Icon Asset:</span>
+                          <span className="block text-[10px] text-slate-500 font-mono font-bold uppercase">
+                            Upload Icon Asset:
+                          </span>
                           <div className="border-2 border-dashed border-slate-200 rounded-lg p-2.5 text-center hover:bg-slate-50 transition-colors cursor-pointer relative">
                             <input
                               type="file"
@@ -958,9 +1260,9 @@ export default function AdminPage() {
                                 if (file) {
                                   const reader = new FileReader();
                                   reader.onloadend = () => {
-                                    setToolForm(prev => ({
+                                    setToolForm((prev) => ({
                                       ...prev,
-                                      iconUrl: reader.result as string
+                                      iconUrl: reader.result as string,
                                     }));
                                   };
                                   reader.readAsDataURL(file);
@@ -970,19 +1272,28 @@ export default function AdminPage() {
                             <div className="text-[11px] text-slate-600 font-bold">
                               Click or Drop Brand Logo
                             </div>
-                            <p className="text-[9px] text-slate-400 mt-0.5">Loads PNG, JPG, WebP, SVG data</p>
+                            <p className="text-[9px] text-slate-400 mt-0.5">
+                              Loads PNG, JPG, WebP, SVG data
+                            </p>
                           </div>
                         </div>
 
                         {/* URL Paste & Preview */}
                         <div className="space-y-2">
                           <div>
-                            <span className="block text-[10px] text-slate-500 font-mono font-bold uppercase">Or Paste Remote URL:</span>
+                            <span className="block text-[10px] text-slate-500 font-mono font-bold uppercase">
+                              Or Paste Remote URL:
+                            </span>
                             <input
                               type="text"
                               placeholder="e.g. https://domain.com/logo.png"
-                              value={toolForm.iconUrl || ''}
-                              onChange={(e) => setToolForm(prev => ({ ...prev, iconUrl: e.target.value }))}
+                              value={toolForm.iconUrl || ""}
+                              onChange={(e) =>
+                                setToolForm((prev) => ({
+                                  ...prev,
+                                  iconUrl: e.target.value,
+                                }))
+                              }
                               className="w-full mt-1.5 p-2 border border-slate-250 bg-white rounded-lg text-[11px]"
                             />
                           </div>
@@ -995,14 +1306,22 @@ export default function AdminPage() {
                                 className="h-8 w-8 rounded-full object-contain border border-slate-200 bg-white"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
-                                  (e.target as HTMLElement).style.display = 'none';
+                                  (e.target as HTMLElement).style.display =
+                                    "none";
                                 }}
                               />
                               <div className="text-[9px] truncate text-slate-500">
-                                <span className="font-bold text-rose-600 block">✓ Logo Attached</span>
+                                <span className="font-bold text-rose-600 block">
+                                  ✓ Logo Attached
+                                </span>
                                 <button
                                   type="button"
-                                  onClick={() => setToolForm(prev => ({ ...prev, iconUrl: '' }))}
+                                  onClick={() =>
+                                    setToolForm((prev) => ({
+                                      ...prev,
+                                      iconUrl: "",
+                                    }))
+                                  }
                                   className="text-rose-500 hover:underline font-bold"
                                 >
                                   Remove Icon
@@ -1026,21 +1345,36 @@ export default function AdminPage() {
 
                   {/* List existing */}
                   <div className="space-y-3">
-                    <h3 className="font-bold text-slate-800 text-sm">Active Tools List</h3>
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      Active Tools List
+                    </h3>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <th className="p-3 font-bold">Tool Name</th>
                             <th className="p-3 font-bold">Category</th>
-                            <th className="p-3 font-bold font-mono">TCO Cost</th>
+                            <th className="p-3 font-bold font-mono">
+                              TCO Cost
+                            </th>
                             <th className="p-3 font-bold">Opinion Spec</th>
-                            <th className="p-3 font-bold text-right">Actions</th>
+                            <th className="p-3 font-bold text-right">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
-                          {toolsList.map(t => {
-                            const isBaseline = ['quickbooks', 'freshbooks', 'asana', 'clickup', 'salesforce', 'hubspot', 'monday', 'jira'].includes(t.slug);
+                          {toolsList.map((t) => {
+                            const isBaseline = [
+                              "quickbooks",
+                              "freshbooks",
+                              "asana",
+                              "clickup",
+                              "salesforce",
+                              "hubspot",
+                              "monday",
+                              "jira",
+                            ].includes(t.slug);
                             return (
                               <tr key={t.slug} className="hover:bg-slate-50/50">
                                 <td className="p-3 font-bold flex items-center gap-2">
@@ -1058,12 +1392,20 @@ export default function AdminPage() {
                                   )}
                                   <div>
                                     <span>{t.name}</span>
-                                    <span className="block text-[9px] text-slate-400 font-mono mt-0.5">/{t.slug}</span>
+                                    <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                                      /{t.slug}
+                                    </span>
                                   </div>
                                 </td>
-                                <td className="p-3 capitalize">{t.category.replace('-', ' ')}</td>
-                                <td className="p-3 font-mono">{t.startingPrice}</td>
-                                <td className="p-3 text-slate-500 max-w-xs truncate">{t.oneLineOpinion}</td>
+                                <td className="p-3 capitalize">
+                                  {t.category.replace("-", " ")}
+                                </td>
+                                <td className="p-3 font-mono">
+                                  {t.startingPrice}
+                                </td>
+                                <td className="p-3 text-slate-500 max-w-xs truncate">
+                                  {t.oneLineOpinion}
+                                </td>
                                 <td className="p-3 text-right space-x-2">
                                   <button
                                     onClick={() => editToolInForm(t)}
@@ -1079,7 +1421,9 @@ export default function AdminPage() {
                                       Remove
                                     </button>
                                   ) : (
-                                    <span className="text-[10px] text-slate-300 font-mono font-bold ml-1">Baseline</span>
+                                    <span className="text-[10px] text-slate-300 font-mono font-bold ml-1">
+                                      Baseline
+                                    </span>
                                   )}
                                 </td>
                               </tr>
@@ -1095,14 +1439,22 @@ export default function AdminPage() {
               {/* ==================================================
                  TAB 3: MANAGE REVIEWS
                  ================================================== */}
-              {activeTab === 'reviews' && (
+              {activeTab === "reviews" && (
                 <div className="space-y-8 animate-fade-in">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Manage dynamic rating matrices</h2>
-                    <p className="text-xs text-slate-500">Pick any two database tools to build or update detailed specifications matrices comparing features side-by-side.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      Manage dynamic rating matrices
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Pick any two database tools to build or update detailed
+                      specifications matrices comparing features side-by-side.
+                    </p>
                   </div>
 
-                  <form onSubmit={handleSaveReview} className="space-y-6 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs">
+                  <form
+                    onSubmit={handleSaveReview}
+                    className="space-y-6 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
+                  >
                     <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-widest leading-none">
                       Dynamic Reviews Matrix Builder
                     </h3>
@@ -1111,7 +1463,9 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Title */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-705">Review Headline:</label>
+                        <label className="block font-bold text-slate-705">
+                          Review Headline:
+                        </label>
                         <input
                           type="text"
                           required
@@ -1119,10 +1473,10 @@ export default function AdminPage() {
                           value={reviewForm.title}
                           onChange={(e) => {
                             const val = e.target.value;
-                            setReviewForm(prev => ({
+                            setReviewForm((prev) => ({
                               ...prev,
                               title: val,
-                              slug: autoSlugify(val)
+                              slug: autoSlugify(val),
                             }));
                           }}
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
@@ -1131,64 +1485,105 @@ export default function AdminPage() {
 
                       {/* Slug */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-450">Review Dynamic Slug (Auto):</label>
+                        <label className="block font-bold text-slate-450">
+                          Review Dynamic Slug (Auto):
+                        </label>
                         <input
                           type="text"
                           required
                           value={reviewForm.slug}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, slug: autoSlugify(e.target.value) }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              slug: autoSlugify(e.target.value),
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-slate-100 rounded-lg font-mono text-[11px]"
                         />
                       </div>
 
                       {/* Tool A */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Select Tool Name A:</label>
+                        <label className="block font-bold text-slate-700">
+                          Select Tool Name A:
+                        </label>
                         <select
                           value={reviewForm.toolA}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, toolA: e.target.value }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              toolA: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
-                          {toolsList.map(t => (
-                            <option key={t.slug} value={t.slug}>{t.name}</option>
+                          {toolsList.map((t) => (
+                            <option key={t.slug} value={t.slug}>
+                              {t.name}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* Tool B */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Select Tool Name B:</label>
+                        <label className="block font-bold text-slate-700">
+                          Select Tool Name B:
+                        </label>
                         <select
                           value={reviewForm.toolB}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, toolB: e.target.value }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              toolB: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
-                          {toolsList.map(t => (
-                            <option key={t.slug} value={t.slug}>{t.name}</option>
+                          {toolsList.map((t) => (
+                            <option key={t.slug} value={t.slug}>
+                              {t.name}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* Category */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Niche Category Match:</label>
+                        <label className="block font-bold text-slate-700">
+                          Niche Category Match:
+                        </label>
                         <select
                           value={reviewForm.category}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, category: e.target.value as CategorySlug }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              category: e.target.value as CategorySlug,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
-                          {CATEGORIES.map(c => (
-                            <option key={c.slug} value={c.slug}>{c.name}</option>
+                          {CATEGORIES.map((c) => (
+                            <option key={c.slug} value={c.slug}>
+                              {c.name}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* Verdict Selection text */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Editor Award selection:</label>
+                        <label className="block font-bold text-slate-700">
+                          Editor Award selection:
+                        </label>
                         <select
-                          value={reviewForm.verdict || 'editor-pick'}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, verdict: e.target.value as any }))}
+                          value={reviewForm.verdict || "editor-pick"}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              verdict: e.target.value as any,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                         >
                           <option value="editor-pick">Editor Pick</option>
@@ -1199,25 +1594,39 @@ export default function AdminPage() {
 
                       {/* Winner Slug select */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Winner Pick candidate (Slug matches):</label>
+                        <label className="block font-bold text-slate-700">
+                          Winner Pick candidate (Slug matches):
+                        </label>
                         <input
                           type="text"
                           required
                           placeholder="e.g. asana"
-                          value={reviewForm.winnerSlug || ''}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, winnerSlug: e.target.value }))}
+                          value={reviewForm.winnerSlug || ""}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              winnerSlug: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                         />
                       </div>
 
                       {/* Date */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Date Issued:</label>
+                        <label className="block font-bold text-slate-700">
+                          Date Issued:
+                        </label>
                         <input
                           type="text"
                           required
                           value={reviewForm.publicationDate}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, publicationDate: e.target.value }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              publicationDate: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                         />
                       </div>
@@ -1225,26 +1634,40 @@ export default function AdminPage() {
 
                     {/* Excerpt pulling */}
                     <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">Excerpt / Pitch Sentence:</label>
+                      <label className="block font-bold text-slate-700">
+                        Excerpt / Pitch Sentence:
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="An expert software audit benchmarking task lifecycle planning..."
                         value={reviewForm.excerpt}
-                        onChange={(e) => setReviewForm(prev => ({ ...prev, excerpt: e.target.value }))}
+                        onChange={(e) =>
+                          setReviewForm((prev) => ({
+                            ...prev,
+                            excerpt: e.target.value,
+                          }))
+                        }
                         className="w-full p-2 border border-slate-250 bg-white rounded-lg text-xs"
                       />
                     </div>
 
                     {/* Hot take quote */}
                     <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">Editorial Hot-Take (Large graphic card citation):</label>
+                      <label className="block font-bold text-slate-700">
+                        Editorial Hot-Take (Large graphic card citation):
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Asana rules user layouts but Monday is 10x cheaper."
                         value={reviewForm.hotTakeQuote}
-                        onChange={(e) => setReviewForm(prev => ({ ...prev, hotTakeQuote: e.target.value }))}
+                        onChange={(e) =>
+                          setReviewForm((prev) => ({
+                            ...prev,
+                            hotTakeQuote: e.target.value,
+                          }))
+                        }
                         className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                       />
                     </div>
@@ -1252,24 +1675,38 @@ export default function AdminPage() {
                     {/* Best for A, Best for B */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Best For Tool A (Checklist 1):</label>
+                        <label className="block font-bold text-slate-700">
+                          Best For Tool A (Checklist 1):
+                        </label>
                         <input
                           type="text"
                           required
                           placeholder="Best for enterprise-level compliance and charts."
                           value={reviewForm.bestForA}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, bestForA: e.target.value }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              bestForA: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-255 bg-white rounded-lg"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">Best For Tool B (Checklist 2):</label>
+                        <label className="block font-bold text-slate-700">
+                          Best For Tool B (Checklist 2):
+                        </label>
                         <input
                           type="text"
                           required
                           placeholder="Best for small agile startups on tighter budgets."
                           value={reviewForm.bestForB}
-                          onChange={(e) => setReviewForm(prev => ({ ...prev, bestForB: e.target.value }))}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              bestForB: e.target.value,
+                            }))
+                          }
                           className="w-full p-2 border border-slate-255 bg-white rounded-lg"
                         />
                       </div>
@@ -1277,13 +1714,20 @@ export default function AdminPage() {
 
                     {/* Final verdict block */}
                     <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">Final Verdict Statement:</label>
+                      <label className="block font-bold text-slate-700">
+                        Final Verdict Statement:
+                      </label>
                       <textarea
                         required
                         rows={3}
                         placeholder="Enter the broad conclusion explaining which platform fits which archetype profile."
                         value={reviewForm.finalVerdictParagraph}
-                        onChange={(e) => setReviewForm(prev => ({ ...prev, finalVerdictParagraph: e.target.value }))}
+                        onChange={(e) =>
+                          setReviewForm((prev) => ({
+                            ...prev,
+                            finalVerdictParagraph: e.target.value,
+                          }))
+                        }
                         className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                       />
                     </div>
@@ -1291,7 +1735,9 @@ export default function AdminPage() {
                     {/* INTERACTIVE COMPARISON ROWS DESIGN BUILDER */}
                     <div className="space-y-3 p-4 bg-white border border-slate-200 rounded-xl">
                       <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                        <h4 className="font-bold text-slate-800 uppercase tracking-wide">Interactive Matrix Rows Builder</h4>
+                        <h4 className="font-bold text-slate-800 uppercase tracking-wide">
+                          Interactive Matrix Rows Builder
+                        </h4>
                         <span className="text-[10px] font-mono text-slate-400 font-bold bg-slate-50 px-2 py-0.5 border rounded">
                           Rows Added: {customTableRows.length}
                         </span>
@@ -1304,19 +1750,32 @@ export default function AdminPage() {
                             <thead className="bg-slate-50 border-b border-slate-200">
                               <tr>
                                 <th className="p-2 font-bold">Feature</th>
-                                <th className="p-2 font-bold">Tool A Specification</th>
-                                <th className="p-2 font-bold">Tool B Specification</th>
+                                <th className="p-2 font-bold">
+                                  Tool A Specification
+                                </th>
+                                <th className="p-2 font-bold">
+                                  Tool B Specification
+                                </th>
                                 <th className="p-2 font-bold">Winner</th>
-                                <th className="p-2 font-bold text-right">Wipe</th>
+                                <th className="p-2 font-bold text-right">
+                                  Wipe
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {customTableRows.map((row, idx) => (
-                                <tr key={idx} className="border-b border-slate-100">
-                                  <td className="p-2 font-semibold text-slate-800">{row.feature}</td>
+                                <tr
+                                  key={idx}
+                                  className="border-b border-slate-100"
+                                >
+                                  <td className="p-2 font-semibold text-slate-800">
+                                    {row.feature}
+                                  </td>
                                   <td className="p-2">{row.valueA}</td>
                                   <td className="p-2">{row.valueB}</td>
-                                  <td className="p-2 font-bold text-blue-600 font-mono">{row.winner}</td>
+                                  <td className="p-2 font-bold text-blue-600 font-mono">
+                                    {row.winner}
+                                  </td>
                                   <td className="p-2 text-right">
                                     <button
                                       type="button"
@@ -1336,42 +1795,70 @@ export default function AdminPage() {
                       {/* Dynamic creation line */}
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
                         <div className="space-y-1">
-                          <span className="block font-bold text-[10px] text-slate-500">Feature evaluated:</span>
+                          <span className="block font-bold text-[10px] text-slate-500">
+                            Feature evaluated:
+                          </span>
                           <input
                             type="text"
                             placeholder="e.g. API Rate Limits"
                             value={newRowDraft.feature}
-                            onChange={(e) => setNewRowDraft(prev => ({ ...prev, feature: e.target.value }))}
+                            onChange={(e) =>
+                              setNewRowDraft((prev) => ({
+                                ...prev,
+                                feature: e.target.value,
+                              }))
+                            }
                             className="w-full p-2 border border-slate-200 bg-white rounded"
                           />
                         </div>
                         <div className="space-y-1">
-                          <span className="block font-bold text-[10px] text-slate-500">Tool A value spec:</span>
+                          <span className="block font-bold text-[10px] text-slate-500">
+                            Tool A value spec:
+                          </span>
                           <input
                             type="text"
                             placeholder="e.g. 5,000 requests/hr"
                             value={newRowDraft.valueA}
-                            onChange={(e) => setNewRowDraft(prev => ({ ...prev, valueA: e.target.value }))}
+                            onChange={(e) =>
+                              setNewRowDraft((prev) => ({
+                                ...prev,
+                                valueA: e.target.value,
+                              }))
+                            }
                             className="w-full p-2 border border-slate-200 bg-white rounded"
                           />
                         </div>
                         <div className="space-y-1">
-                          <span className="block font-bold text-[10px] text-slate-500">Tool B value spec:</span>
+                          <span className="block font-bold text-[10px] text-slate-500">
+                            Tool B value spec:
+                          </span>
                           <input
                             type="text"
                             placeholder="e.g. Unlimited client hooks"
                             value={newRowDraft.valueB}
-                            onChange={(e) => setNewRowDraft(prev => ({ ...prev, valueB: e.target.value }))}
+                            onChange={(e) =>
+                              setNewRowDraft((prev) => ({
+                                ...prev,
+                                valueB: e.target.value,
+                              }))
+                            }
                             className="w-full p-2 border border-slate-200 bg-white rounded"
                           />
                         </div>
                         <div className="space-y-1">
-                          <span className="block font-bold text-[10px] text-slate-500">Row Winner Name:</span>
+                          <span className="block font-bold text-[10px] text-slate-500">
+                            Row Winner Name:
+                          </span>
                           <input
                             type="text"
                             placeholder="e.g. ClickUp Winner"
                             value={newRowDraft.winner}
-                            onChange={(e) => setNewRowDraft(prev => ({ ...prev, winner: e.target.value }))}
+                            onChange={(e) =>
+                              setNewRowDraft((prev) => ({
+                                ...prev,
+                                winner: e.target.value,
+                              }))
+                            }
                             className="w-full p-2 border border-slate-200 bg-white rounded"
                           />
                         </div>
@@ -1399,29 +1886,46 @@ export default function AdminPage() {
 
                   {/* List active comparison sheets */}
                   <div className="space-y-3">
-                    <h3 className="font-bold text-slate-800 text-sm">Active Comparison reviews on file</h3>
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      Active Comparison reviews on file
+                    </h3>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
-                            <th className="p-3 font-bold">Review Title Summary</th>
+                            <th className="p-3 font-bold">
+                              Review Title Summary
+                            </th>
                             <th className="p-3 font-bold">Tools Linked</th>
                             <th className="p-3 font-bold">Verdict Banner</th>
-                            <th className="p-3 font-bold text-right font-mono">Row Counts</th>
-                            <th className="p-3 font-bold text-right">Actions</th>
+                            <th className="p-3 font-bold text-right font-mono">
+                              Row Counts
+                            </th>
+                            <th className="p-3 font-bold text-right">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {reviewsList.map(r => {
-                            const isBaseline = ['quickbooks-vs-freshbooks', 'asana-vs-clickup'].includes(r.slug);
+                          {reviewsList.map((r) => {
+                            const isBaseline = [
+                              "quickbooks-vs-freshbooks",
+                              "asana-vs-clickup",
+                            ].includes(r.slug);
                             return (
                               <tr key={r.slug} className="hover:bg-slate-50/50">
                                 <td className="p-3">
-                                  <Link href={`/reviews/${r.slug}`} target="_blank" className="font-bold text-blue-600 hover:underline flex items-center gap-1.5">
+                                  <Link
+                                    href={`/reviews/${r.slug}`}
+                                    target="_blank"
+                                    className="font-bold text-blue-600 hover:underline flex items-center gap-1.5"
+                                  >
                                     <span>{r.title}</span>
                                     <Eye className="h-3.5 w-3.5 text-slate-400" />
                                   </Link>
-                                  <span className="block text-[9px] text-slate-400 font-mono mt-0.5">/{r.slug}</span>
+                                  <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                                    /{r.slug}
+                                  </span>
                                 </td>
                                 <td className="p-3 font-mono text-[10px] uppercase text-slate-500">
                                   {r.toolA} VS {r.toolB}
@@ -1449,7 +1953,9 @@ export default function AdminPage() {
                                       Remove
                                     </button>
                                   ) : (
-                                    <span className="text-[10px] text-slate-350 font-mono font-bold inline-block ml-1">Baseline</span>
+                                    <span className="text-[10px] text-slate-350 font-mono font-bold inline-block ml-1">
+                                      Baseline
+                                    </span>
                                   )}
                                 </td>
                               </tr>
@@ -1465,26 +1971,136 @@ export default function AdminPage() {
               {/* ==================================================
                  TAB 4: MANAGE BLOGS
                  ================================================== */}
-              {activeTab === 'blog' && (
+              {activeTab === "blog" && (
                 <div className="space-y-8 animate-fade-in">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Draft Procurement Essays</h2>
-                    <p className="text-xs text-slate-500">Review future licensing schemes and draft fully compliant Markdown copy blocks.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      Draft Procurement Essays
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Review future licensing schemes and draft fully compliant
+                      Markdown copy blocks.
+                    </p>
                   </div>
 
-                  <form onSubmit={handleSaveBlog} className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                        Published now
+                      </span>
+                      <span className="block text-2xl font-black text-slate-950 mt-1">
+                        {publishedBlogsCount}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                        Queued for later
+                      </span>
+                      <span className="block text-2xl font-black text-slate-950 mt-1">
+                        {scheduledBlogsCount}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                        Cadence
+                      </span>
+                      <span className="block text-2xl font-black text-slate-950 mt-1">
+                        {bulkBlogIntervalHours}h
+                      </span>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={handleSaveBulkBlogQueue}
+                    className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
+                  >
+                    <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                        Weekly Bulk Scheduler
+                      </h3>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        Paste JSON drafts and the system spaces them every 10
+                        hours.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="block font-bold text-slate-700">
+                          Batch start date/time
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={bulkBlogStartAt}
+                          onChange={(e) => setBulkBlogStartAt(e.target.value)}
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">
+                          Hours between posts
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={bulkBlogIntervalHours}
+                          onChange={(e) =>
+                            setBulkBlogIntervalHours(
+                              Number(e.target.value) ||
+                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                            )
+                          }
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block font-bold text-slate-700">
+                        Bulk article payload
+                      </label>
+                      <textarea
+                        rows={10}
+                        value={bulkBlogDraftJson}
+                        onChange={(e) => setBulkBlogDraftJson(e.target.value)}
+                        className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
+                        placeholder='[{"title":"...","excerpt":"...","category":"...","readTime":"5 min read","contentMarkdown":"..."}]'
+                      />
+                      <p className="text-[10px] text-slate-500">
+                        Each object needs `title`, `excerpt`, `category`, and
+                        `contentMarkdown`. Optional `slug`, `readTime`, and
+                        `issueNumber` are supported.
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                    >
+                      <CloudUpload className="h-3.5 w-3.5" />
+                      <span>Queue Weekly Batch</span>
+                    </button>
+                  </form>
+
+                  <form
+                    onSubmit={handleSaveBlog}
+                    className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
+                  >
                     <div className="flex justify-between items-center pb-2 border-b border-slate-150">
                       <h3 className="font-bold text-slate-804 uppercase tracking-wider">
                         The Dispatch Markdown Editor
                       </h3>
-                      
+
                       <button
                         type="button"
                         onClick={() => setBlogPreviewMode(!blogPreviewMode)}
                         className="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-400 px-3 py-1 rounded font-bold cursor-pointer transition-colors"
                       >
                         <Eye className="h-3.5 w-3.5 text-blue-600" />
-                        <span>{blogPreviewMode ? 'Write Mode' : 'Preview Layout'}</span>
+                        <span>
+                          {blogPreviewMode ? "Write Mode" : "Preview Layout"}
+                        </span>
                       </button>
                     </div>
 
@@ -1499,11 +2115,16 @@ export default function AdminPage() {
                             {blogForm.readTime} &bull; {blogForm.category}
                           </span>
                         </div>
-                        <h1 className="text-2xl font-extrabold text-slate-950">{blogForm.title || 'Untitled Essay'}</h1>
-                        <p className="italic font-sans text-slate-500 pl-3 border-l-2 border-slate-300">{blogForm.excerpt || 'Write an excerpt statement...'}</p>
-                        
+                        <h1 className="text-2xl font-extrabold text-slate-950">
+                          {blogForm.title || "Untitled Essay"}
+                        </h1>
+                        <p className="italic font-sans text-slate-500 pl-3 border-l-2 border-slate-300">
+                          {blogForm.excerpt || "Write an excerpt statement..."}
+                        </p>
+
                         <div className="text-slate-700 leading-relaxed text-xs space-y-4 whitespace-pre-wrap font-sans mt-5">
-                          {blogForm.contentMarkdown || 'Compose interesting procurement guidelines... Supports standard line breaks.'}
+                          {blogForm.contentMarkdown ||
+                            "Compose interesting procurement guidelines... Supports standard line breaks."}
                         </div>
                       </div>
                     ) : (
@@ -1512,7 +2133,9 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Title */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-700">Article Title:</label>
+                            <label className="block font-bold text-slate-700">
+                              Article Title:
+                            </label>
                             <input
                               type="text"
                               required
@@ -1520,10 +2143,10 @@ export default function AdminPage() {
                               value={blogForm.title}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setBlogForm(prev => ({
+                                setBlogForm((prev) => ({
                                   ...prev,
                                   title: val,
-                                  slug: autoSlugify(val)
+                                  slug: autoSlugify(val),
                                 }));
                               }}
                               className="w-full p-2 border border-slate-250 bg-white rounded-lg"
@@ -1532,63 +2155,98 @@ export default function AdminPage() {
 
                           {/* Slug */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-450">Url slug (Auto):</label>
+                            <label className="block font-bold text-slate-450">
+                              Url slug (Auto):
+                            </label>
                             <input
                               type="text"
                               required
                               value={blogForm.slug}
-                              onChange={(e) => setBlogForm(prev => ({ ...prev, slug: autoSlugify(e.target.value) }))}
+                              onChange={(e) =>
+                                setBlogForm((prev) => ({
+                                  ...prev,
+                                  slug: autoSlugify(e.target.value),
+                                }))
+                              }
                               className="w-full p-2 border border-slate-250 bg-slate-100 rounded-lg font-mono text-[11px]"
                             />
                           </div>
 
                           {/* Issue Number */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-700">Issue Count:</label>
+                            <label className="block font-bold text-slate-700">
+                              Issue Count:
+                            </label>
                             <input
                               type="number"
                               required
                               value={blogForm.issueNumber}
-                              onChange={(e) => setBlogForm(prev => ({ ...prev, issueNumber: parseInt(e.target.value) || 0 }))}
+                              onChange={(e) =>
+                                setBlogForm((prev) => ({
+                                  ...prev,
+                                  issueNumber: parseInt(e.target.value) || 0,
+                                }))
+                              }
                               className="w-full p-2 border border-slate-250 bg-white rounded-lg font-mono"
                             />
                           </div>
 
                           {/* Category input */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-700">Growth Category tag:</label>
+                            <label className="block font-bold text-slate-700">
+                              Growth Category tag:
+                            </label>
                             <input
                               type="text"
                               required
                               placeholder="e.g. Finance Audits"
                               value={blogForm.category}
-                              onChange={(e) => setBlogForm(prev => ({ ...prev, category: e.target.value }))}
+                              onChange={(e) =>
+                                setBlogForm((prev) => ({
+                                  ...prev,
+                                  category: e.target.value,
+                                }))
+                              }
                               className="w-full p-2 border border-slate-250 bg-white rounded-lg font-sans"
                             />
                           </div>
 
                           {/* Read time */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-700">Read Time stamp:</label>
+                            <label className="block font-bold text-slate-700">
+                              Read Time stamp:
+                            </label>
                             <input
                               type="text"
                               required
                               placeholder="e.g. 5 min read"
                               value={blogForm.readTime}
-                              onChange={(e) => setBlogForm(prev => ({ ...prev, readTime: e.target.value }))}
+                              onChange={(e) =>
+                                setBlogForm((prev) => ({
+                                  ...prev,
+                                  readTime: e.target.value,
+                                }))
+                              }
                               className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                             />
                           </div>
 
                           {/* Date of Publication */}
                           <div className="space-y-1">
-                            <label className="block font-bold text-slate-705">Publication Date label:</label>
+                            <label className="block font-bold text-slate-705">
+                              Publication Date label:
+                            </label>
                             <input
                               type="text"
                               required
                               placeholder="May 28, 2026"
                               value={blogForm.publicationDate}
-                              onChange={(e) => setBlogForm(prev => ({ ...prev, publicationDate: e.target.value }))}
+                              onChange={(e) =>
+                                setBlogForm((prev) => ({
+                                  ...prev,
+                                  publicationDate: e.target.value,
+                                }))
+                              }
                               className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                             />
                           </div>
@@ -1596,13 +2254,20 @@ export default function AdminPage() {
 
                         {/* Excerpt */}
                         <div className="space-y-1">
-                          <label className="block font-bold text-slate-730">Excerpt Summary statement:</label>
+                          <label className="block font-bold text-slate-730">
+                            Excerpt Summary statement:
+                          </label>
                           <input
                             type="text"
                             required
                             placeholder="A brief overview statement displaying on list summaries..."
                             value={blogForm.excerpt}
-                            onChange={(e) => setBlogForm(prev => ({ ...prev, excerpt: e.target.value }))}
+                            onChange={(e) =>
+                              setBlogForm((prev) => ({
+                                ...prev,
+                                excerpt: e.target.value,
+                              }))
+                            }
                             className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                           />
                         </div>
@@ -1610,15 +2275,26 @@ export default function AdminPage() {
                         {/* Content Markdown text area */}
                         <div className="space-y-1">
                           <div className="flex justify-between items-center">
-                            <label className="block font-bold text-slate-700">Essay Body Content (supports basic markdown block divisions with double breaks):</label>
-                            <span className="text-[10px] text-slate-400">Lines: {blogForm.contentMarkdown.split('\n').length}</span>
+                            <label className="block font-bold text-slate-700">
+                              Essay Body Content (supports basic markdown block
+                              divisions with double breaks):
+                            </label>
+                            <span className="text-[10px] text-slate-400">
+                              Lines:{" "}
+                              {blogForm.contentMarkdown.split("\n").length}
+                            </span>
                           </div>
                           <textarea
                             required
                             rows={10}
                             placeholder="### Section Heading&#10;&#10;Use double returns to divide paragraphs. Use numbered lists like:&#10;1. **Item title** Description spec.&#10;2. **Next title** Other items."
                             value={blogForm.contentMarkdown}
-                            onChange={(e) => setBlogForm(prev => ({ ...prev, contentMarkdown: e.target.value }))}
+                            onChange={(e) =>
+                              setBlogForm((prev) => ({
+                                ...prev,
+                                contentMarkdown: e.target.value,
+                              }))
+                            }
                             className="w-full p-3 border border-slate-250 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
                           />
                         </div>
@@ -1639,7 +2315,9 @@ export default function AdminPage() {
 
                   {/* List Blog Archive */}
                   <div className="space-y-3">
-                    <h3 className="font-bold text-slate-800 text-sm font-sans">Active Articles & essays in the dispatcher</h3>
+                    <h3 className="font-bold text-slate-800 text-sm font-sans">
+                      Active Articles & essays in the dispatcher
+                    </h3>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
@@ -1647,27 +2325,55 @@ export default function AdminPage() {
                             <th className="p-3 font-bold">Issue Title</th>
                             <th className="p-3 font-bold">Niche Topic</th>
                             <th className="p-3 font-bold">Date Published</th>
-                            <th className="p-3 font-bold text-right">Actions</th>
+                            <th className="p-3 font-bold">State</th>
+                            <th className="p-3 font-bold text-right">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {blogsList.map(b => {
-                            const isBaseline = ['the-death-of-unlimited-seats', 'demystifying-gaap-ledgers'].includes(b.slug);
+                          {sortedBlogsList.map((b) => {
+                            const isBaseline = [
+                              "the-death-of-unlimited-seats",
+                              "demystifying-gaap-ledgers",
+                            ].includes(b.slug);
+                            const blogStatus = getBlogScheduleStatus(b);
                             return (
                               <tr key={b.slug} className="hover:bg-slate-50/50">
                                 <td className="p-3">
-                                  <Link href={`/blog/${b.slug}`} target="_blank" className="font-bold text-amber-600 hover:underline flex items-center gap-1">
-                                    <span>Issue #{b.issueNumber} - {b.title}</span>
+                                  <Link
+                                    href={`/blog/${b.slug}`}
+                                    target="_blank"
+                                    className="font-bold text-amber-600 hover:underline flex items-center gap-1"
+                                  >
+                                    <span>
+                                      Issue #{b.issueNumber} - {b.title}
+                                    </span>
                                     <Eye className="h-4 w-4 text-slate-400" />
                                   </Link>
-                                  <span className="block text-[9px] text-slate-400 font-mono mt-0.5">/{b.slug}</span>
+                                  <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                                    /{b.slug}
+                                  </span>
                                 </td>
                                 <td className="p-3">
                                   <span className="px-2 py-0.5 bg-blue-50 border border-blue-150 rounded text-blue-700 font-bold text-[9px] uppercase tracking-wider font-mono">
                                     {b.category}
                                   </span>
                                 </td>
-                                <td className="p-3 font-mono text-slate-600">{b.publicationDate}</td>
+                                <td className="p-3 font-mono text-slate-600">
+                                  {blogStatus.formattedDate}
+                                </td>
+                                <td className="p-3">
+                                  <span
+                                    className={`inline-flex items-center px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider font-mono border ${
+                                      blogStatus.isFuture
+                                        ? "bg-amber-50 border-amber-100 text-amber-700"
+                                        : "bg-emerald-50 border-emerald-100 text-emerald-700"
+                                    }`}
+                                  >
+                                    {blogStatus.label}
+                                  </span>
+                                </td>
                                 <td className="p-3 text-right space-x-2">
                                   <button
                                     onClick={() => editBlogInForm(b)}
@@ -1683,7 +2389,9 @@ export default function AdminPage() {
                                       Remove
                                     </button>
                                   ) : (
-                                    <span className="text-[10px] text-slate-350 font-mono font-bold ml-1">Baseline</span>
+                                    <span className="text-[10px] text-slate-350 font-mono font-bold ml-1">
+                                      Baseline
+                                    </span>
                                   )}
                                 </td>
                               </tr>
@@ -1699,7 +2407,7 @@ export default function AdminPage() {
               {/* ==================================================
                  TAB 5: DATABASE BACKEND COUPLING (SUPABASE CONTROL CENTER)
                  ================================================== */}
-              {activeTab === 'backend' && (
+              {activeTab === "backend" && (
                 <div className="space-y-8 animate-fade-in text-xs leading-relaxed text-slate-750 font-sans">
                   <div className="border-b pb-4">
                     <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
@@ -1707,21 +2415,32 @@ export default function AdminPage() {
                       <span>Production Supabase Sync Center</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
-                      Manage double-sync cloud capabilities. Securely push local edits to Supabase tables, or pull remote states to update client previews.
+                      Manage double-sync cloud capabilities. Securely push local
+                      edits to Supabase tables, or pull remote states to update
+                      client previews.
                     </p>
                   </div>
 
                   {/* Supabase connection diagnostic panel */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 col-span-2">
-                      <h3 className="font-extrabold text-slate-950 text-sm">Supabase Sync Architecture</h3>
+                      <h3 className="font-extrabold text-slate-950 text-sm">
+                        Supabase Sync Architecture
+                      </h3>
                       <p className="text-slate-600 leading-normal">
-                        SaasMatrix utilizes local-first client database optimizations (localStorage overlays) to support static build exports (CLS = 0). This Sync Center serves as your content gateway: publish articles and reviews locally in your browser, then push them up to your cloud database whenever you are ready!
+                        SaasMatrix utilizes local-first client database
+                        optimizations (localStorage overlays) to support static
+                        build exports (CLS = 0). This Sync Center serves as your
+                        content gateway: publish articles and reviews locally in
+                        your browser, then push them up to your cloud database
+                        whenever you are ready!
                       </p>
                     </div>
 
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between">
-                      <span className="block text-[10px] text-slate-400 uppercase tracking-wider font-bold">Credential Status</span>
+                      <span className="block text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                        Credential Status
+                      </span>
                       <div className="py-2">
                         {supabaseActive ? (
                           <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-100 p-2 rounded-lg font-bold text-xs">
@@ -1736,7 +2455,9 @@ export default function AdminPage() {
                         )}
                       </div>
                       <span className="text-[9px] text-slate-400 font-mono">
-                        {supabaseActive ? "Vars correctly reading from .env" : "Setup environment variables to go live"}
+                        {supabaseActive
+                          ? "Vars correctly reading from .env"
+                          : "Setup environment variables to go live"}
                       </span>
                     </div>
                   </div>
@@ -1749,15 +2470,25 @@ export default function AdminPage() {
                     </h3>
 
                     {syncFeedback && (
-                      <div className={`p-4 rounded-xl border flex items-start gap-2.5 text-xs font-semibold ${
-                        syncFeedback.success 
-                          ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
-                          : 'bg-rose-50 border-rose-100 text-rose-800'
-                      }`}>
-                        <AlertCircle className={`h-4.5 w-4.5 ${syncFeedback.success ? 'text-emerald-600' : 'text-rose-600'} shrink-0 mt-0.5`} />
+                      <div
+                        className={`p-4 rounded-xl border flex items-start gap-2.5 text-xs font-semibold ${
+                          syncFeedback.success
+                            ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+                            : "bg-rose-50 border-rose-100 text-rose-800"
+                        }`}
+                      >
+                        <AlertCircle
+                          className={`h-4.5 w-4.5 ${syncFeedback.success ? "text-emerald-600" : "text-rose-600"} shrink-0 mt-0.5`}
+                        />
                         <div>
-                          <span className="block font-bold">{syncFeedback.success ? 'Operational Success' : 'Sync Process Encountered Anomaly'}</span>
-                          <p className="text-[11px] font-normal mt-0.5 leading-relaxed">{syncFeedback.message}</p>
+                          <span className="block font-bold">
+                            {syncFeedback.success
+                              ? "Operational Success"
+                              : "Sync Process Encountered Anomaly"}
+                          </span>
+                          <p className="text-[11px] font-normal mt-0.5 leading-relaxed">
+                            {syncFeedback.message}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -1765,9 +2496,13 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                       {/* Push Button Box */}
                       <div className="border border-slate-150 p-4 rounded-xl space-y-3">
-                        <h4 className="font-bold text-slate-800">Push Local Storage up to Supabase</h4>
+                        <h4 className="font-bold text-slate-800">
+                          Push Local Storage up to Supabase
+                        </h4>
                         <p className="text-[11px] text-slate-500">
-                          Takes your locally created or edited tools, reviews, and blog dispatches and uploads them to Supabase (uses SQL upserts).
+                          Takes your locally created or edited tools, reviews,
+                          and blog dispatches and uploads them to Supabase (uses
+                          SQL upserts).
                         </p>
                         <button
                           type="button"
@@ -1791,9 +2526,13 @@ export default function AdminPage() {
 
                       {/* Pull Button Box */}
                       <div className="border border-slate-150 p-4 rounded-xl space-y-3">
-                        <h4 className="font-bold text-slate-800">Pull Cloud database into Local Storage</h4>
+                        <h4 className="font-bold text-slate-800">
+                          Pull Cloud database into Local Storage
+                        </h4>
                         <p className="text-[11px] text-slate-500">
-                          Retrieves live rows from Supabase, synchronizing them directly within this browser window cache so they render on previews.
+                          Retrieves live rows from Supabase, synchronizing them
+                          directly within this browser window cache so they
+                          render on previews.
                         </p>
                         <button
                           type="button"
@@ -1819,15 +2558,22 @@ export default function AdminPage() {
 
                   {/* Copy Paste SQL Code Generator step */}
                   <div className="space-y-3">
-                    <h3 className="font-bold text-slate-900 text-sm">Supabase Database Setup Guide</h3>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Supabase Database Setup Guide
+                    </h3>
                     <p className="text-slate-500 leading-normal">
-                      To successfully communicate with Supabase, run this precise SQL code inside your <strong>Supabase SQL Editor</strong> to allocate correct table targets:
+                      To successfully communicate with Supabase, run this
+                      precise SQL code inside your{" "}
+                      <strong>Supabase SQL Editor</strong> to allocate correct
+                      table targets:
                     </p>
 
                     <div className="space-y-1">
-                      <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">Recommended Supabase SQL Schema Bootstrap:</span>
+                      <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
+                        Recommended Supabase SQL Schema Bootstrap:
+                      </span>
                       <pre className="bg-slate-950 text-slate-300 overflow-x-auto p-4 rounded-xl border-2 border-slate-900 font-mono text-[9px] max-h-72 leading-normal select-all">
-{`-- 1. Create Tools table
+                        {`-- 1. Create Tools table
 CREATE TABLE saas_tools (
   slug VARCHAR(150) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -1891,8 +2637,6 @@ CREATE POLICY "Allow admin all operations" ON saas_blog_posts FOR ALL TO authent
                   </div>
                 </div>
               )}
-
-
             </div>
           </div>
 
@@ -1900,7 +2644,6 @@ CREATE POLICY "Allow admin all operations" ON saas_blog_posts FOR ALL TO authent
           <div className="max-w-7xl mx-auto mt-8">
             <AdContainer layoutType="top-banner" slotId="admin-bottom-ad" />
           </div>
-
         </div>
       </main>
 
