@@ -1,0 +1,229 @@
+import { getSupabaseClient } from './supabase';
+import { Tool, Review, BlogPost } from './data';
+import { 
+  getCustomTools, 
+  getCustomReviews, 
+  getCustomBlogPosts,
+  saveCustomTool,
+  saveCustomReview,
+  saveCustomBlogPost
+} from './clientDb';
+
+export interface SupabaseSyncResult {
+  success: boolean;
+  message: string;
+  count?: number;
+}
+
+/**
+ * Pushes all custom local storage tables to Supabase.
+ * Uses tables 'saas_tools', 'saas_reviews', and 'saas_blog_posts'.
+ * Drops standard security logs if they fail, falling back gracefully with informative codes.
+ */
+export async function pushLocalToSupabase(): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { success: false, message: 'Supabase credentials are not configured.' };
+  }
+
+  const tools = getCustomTools();
+  const reviews = getCustomReviews();
+  const blogs = getCustomBlogPosts();
+
+  try {
+    let toolsUploaded = 0;
+    let reviewsUploaded = 0;
+    let blogsUploaded = 0;
+
+    // 1. Sync Tools
+    if (tools.length > 0) {
+      const { error: toolsError } = await supabase
+        .from('saas_tools')
+        .upsert(
+          tools.map(t => ({
+            slug: t.slug,
+            name: t.name,
+            starting_price: t.startingPrice,
+            numeric_price: t.numericPrice,
+            category: t.category,
+            one_line_opinion: t.oneLineOpinion,
+            updated_at: new Date().toISOString()
+          })),
+          { onConflict: 'slug' }
+        );
+      
+      if (toolsError) throw new Error(`Tools upsert failed: ${toolsError.message}`);
+      toolsUploaded = tools.length;
+    }
+
+    // 2. Sync Reviews
+    if (reviews.length > 0) {
+      const { error: reviewsError } = await supabase
+        .from('saas_reviews')
+        .upsert(
+          reviews.map(r => ({
+            slug: r.slug,
+            title: r.title,
+            tool_a: r.toolA,
+            tool_b: r.toolB,
+            category: r.category,
+            excerpt: r.excerpt,
+            read_time_minutes: r.readTimeMinutes,
+            publication_date: r.publicationDate,
+            verdict: r.verdict,
+            winner_slug: r.winnerSlug,
+            hot_take_quote: r.hotTakeQuote,
+            final_verdict_paragraph: r.finalVerdictParagraph,
+            best_for_a: r.bestForA,
+            best_for_b: r.bestForB,
+            table_rows: r.tableRows, // Store array values as jsonb
+            updated_at: new Date().toISOString()
+          })),
+          { onConflict: 'slug' }
+        );
+
+      if (reviewsError) throw new Error(`Reviews upsert failed: ${reviewsError.message}`);
+      reviewsUploaded = reviews.length;
+    }
+
+    // 3. Sync Blogs
+    if (blogs.length > 0) {
+      const { error: blogsError } = await supabase
+        .from('saas_blog_posts')
+        .upsert(
+          blogs.map(b => ({
+            slug: b.slug,
+            title: b.title,
+            issue_number: b.issueNumber,
+            excerpt: b.excerpt,
+            read_time: b.readTime,
+            publication_date: b.publicationDate,
+            category: b.category,
+            content_markdown: b.contentMarkdown,
+            updated_at: new Date().toISOString()
+          })),
+          { onConflict: 'slug' }
+        );
+
+      if (blogsError) throw new Error(`Blog posts upsert failed: ${blogsError.message}`);
+      blogsUploaded = blogs.length;
+    }
+
+    return {
+      success: true,
+      message: `Successfully synchronized data with Supabase Cloud! Sync counts: ${toolsUploaded} tools, ${reviewsUploaded} reviews, ${blogsUploaded} blogs.`
+    };
+
+  } catch (error: any) {
+    console.error('Supabase Sync Push failed:', error);
+    return {
+      success: false,
+      message: error.message || 'Verification anomaly occurred while pushing values.'
+    };
+  }
+}
+
+/**
+ * Pulls stored data from Supabase and populates localStorage.
+ */
+export async function pullSupabaseToLocal(): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { success: false, message: 'Supabase credentials are not configured.' };
+  }
+
+  try {
+    // 1. Fetch Tools
+    const { data: toolsData, error: toolsError } = await supabase
+      .from('saas_tools')
+      .select('*');
+
+    if (toolsError && toolsError.code !== 'PGRST116') {
+      // Missing table count is okay, we'll try to explain.
+      throw new Error(`Failed to read saas_tools: ${toolsError.message}`);
+    }
+
+    if (toolsData && toolsData.length > 0) {
+      toolsData.forEach(t => {
+        saveCustomTool({
+          slug: t.slug,
+          name: t.name,
+          startingPrice: t.starting_price,
+          numericPrice: t.numeric_price,
+          category: t.category,
+          oneLineOpinion: t.one_line_opinion
+        });
+      });
+    }
+
+    // 2. Fetch Reviews
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('saas_reviews')
+      .select('*');
+
+    if (reviewsError && reviewsError.code !== 'PGRST116') {
+      throw new Error(`Failed to read saas_reviews: ${reviewsError.message}`);
+    }
+
+    if (reviewsData && reviewsData.length > 0) {
+      reviewsData.forEach(r => {
+        saveCustomReview({
+          slug: r.slug,
+          title: r.title,
+          toolA: r.tool_a,
+          toolB: r.tool_b,
+          category: r.category,
+          excerpt: r.excerpt,
+          readTimeMinutes: r.read_time_minutes,
+          publicationDate: r.publication_date,
+          verdict: r.verdict,
+          winnerSlug: r.winner_slug,
+          hotTakeQuote: r.hot_take_quote,
+          finalVerdictParagraph: r.final_verdict_paragraph,
+          bestForA: r.best_for_a,
+          bestForB: r.best_for_b,
+          tableRows: r.table_rows || []
+        });
+      });
+    }
+
+    // 3. Fetch Blogs
+    const { data: blogsData, error: blogsError } = await supabase
+      .from('saas_blog_posts')
+      .select('*');
+
+    if (blogsError && blogsError.code !== 'PGRST116') {
+      throw new Error(`Failed to read saas_blog_posts: ${blogsError.message}`);
+    }
+
+    if (blogsData && blogsData.length > 0) {
+      blogsData.forEach(b => {
+        saveCustomBlogPost({
+          slug: b.slug,
+          title: b.title,
+          issueNumber: b.issue_number,
+          excerpt: b.excerpt,
+          readTime: b.read_time,
+          publicationDate: b.publication_date,
+          category: b.category,
+          contentMarkdown: b.content_markdown
+        });
+      });
+    }
+
+    const totalPulled = (toolsData?.length || 0) + (reviewsData?.length || 0) + (blogsData?.length || 0);
+
+    return {
+      success: true,
+      message: `Pulled database snapshot from Supabase! Restored ${totalPulled} nodes in active browser cache.`,
+      count: totalPulled
+    };
+
+  } catch (error: any) {
+    console.error('Supabase Sync Pull failed:', error);
+    return {
+      success: false,
+      message: error.message || 'Authentication or schema validation error.'
+    };
+  }
+}
