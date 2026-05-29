@@ -1,4 +1,5 @@
 # 🛰️ Supabase Database & Security Integration Manual
+
 **Project: SaasMatrix Hub**
 
 This guide provides simple, step-by-step instructions to connect your **Supabase PostgreSQL database** with the SaasMatrix administrative panel. Running the SQL snippets below inside your Supabase project will immediately enable cloud synchronization with your offline-first local backups!
@@ -6,6 +7,7 @@ This guide provides simple, step-by-step instructions to connect your **Supabase
 ---
 
 ## 📋 Table of Contents
+
 1. [Core Architecture Highlights](#1-core-architecture-highlights)
 2. [Database Schema Initialization (SQL)](#2-database-schema-initialization-sql)
 3. [Row-Level Security (RLS) Policies](#3-row-level-security-rls-policies)
@@ -18,20 +20,23 @@ This guide provides simple, step-by-step instructions to connect your **Supabase
 ## 1. Core Architecture Highlights
 
 To ensure **0 Cumulative Layout Shift (CLS)** and maximize Google AdSense crawler compatibility, SaasMatrix is structured around a **Local-First hybrid strategy**:
-* **Baseline Data Store:** Reusable assets live as light, compiled structures inside the codebase.
-* **On-the-fly Overlays:** Fresh changes or newly added tools, comparative reviews, and blogs are maintained locally in the active browser storage module.
-* **Supabase Core Integration:** The *Admin Sync Control center* replicates draft items directly into a secure remote PostgreSQL database on your command. Admins can reload from the database on any other device seamlessly!
+
+- **Baseline Data Store:** Reusable assets live as light, compiled structures inside the codebase.
+- **On-the-fly Overlays:** Fresh changes or newly added tools, comparative reviews, and blogs are maintained locally in the active browser storage module.
+- **Supabase Core Integration:** The _Admin Sync Control center_ replicates draft items directly into a secure remote PostgreSQL database on your command. Admins can reload from the database on any other device seamlessly!
 
 ---
 
 ## 2. Database Schema Initialization (SQL)
 
 You need to create **three precise tables** in your Supabase database:
+
 1. `saas_tools` — Catalog of SaaS programs and their metadata.
 2. `saas_reviews` — In-depth comparisons and feature checklists.
 3. `saas_blog_posts` — Inside blog issues & editorial updates.
 
 ### Copy-Paste SQL Seed Script
+
 Log in to your **[Supabase Dashboard](https://supabase.com)**, navigate to the **SQL Editor** tab in the sidebar, and execute the following queries:
 
 ```sql
@@ -129,17 +134,17 @@ Instead of storing passwords in plain text, you can configure your administrator
 
 1. Under the **Authentication** tab inside your Supabase dashboard, click **Users** &rarr; **Add User** &rarr; **Create User**.
 2. Set the email address (e.g. `admin@saasmatrix.com`) and choose a strong, secure password.
-3. (Optional) Turn off *User Email Confirmation* under **Auth Settings** if you wish to allow your new account to log in instantly without checking an inbox.
+3. (Optional) Turn off _User Email Confirmation_ under **Auth Settings** if you wish to allow your new account to log in instantly without checking an inbox.
 
 ---
 
 ## 5. Connecting Env Keys to Your Workspace
 
-To link your SaasMatrix site to your new database, we need to supply the platform with the API keys. 
+To link your SaasMatrix site to your new database, we need to supply the platform with the API keys.
 
 1. Gather these fields from your Supabase panel (**Project Settings &rarr; API**):
-   * **Project URL**: Starts with `https://...`
-   * **Project API Anon Key**: The primary public string key.
+   - **Project URL**: Starts with `https://...`
+   - **Project API Anon Key**: The primary public string key.
 
 2. In the AI Studio editor interface, declare these variables in your **Settings Tab**, or write them in your local `.env` setup:
 
@@ -147,6 +152,7 @@ To link your SaasMatrix site to your new database, we need to supply the platfor
 # Required for Live Supabase Synchronization
 NEXT_PUBLIC_SUPABASE_URL=your_project_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_project_anon_key_here
+# If your dashboard labels it as a publishable key, use NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY instead.
 ```
 
 ---
@@ -154,10 +160,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_project_anon_key_here
 ## 6. Interactive Controls: Push vs. Pull
 
 Once your keys are entered, revisit the protected `/admin` route on your live applet.
+
 1. The **Admin Console** will transition dynamically to **Live Supabase Mode**.
 2. Navigate to the **Backend Database** tab inside the dashboard.
 3. **Push Local to Cloud:** Overwrite/upsert your existing browser edits to your live Postgres backend database.
 4. **Pull Cloud Rows:** Fetch all rows from Supabase on another browser to hydrate the local state instantly!
 
 ---
-*Document prepared by the Principal Frontend Engineer & Deployment Team © 2026.*
+
+_Document prepared by the Principal Frontend Engineer & Deployment Team © 2026._
