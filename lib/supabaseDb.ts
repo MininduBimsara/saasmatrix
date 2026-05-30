@@ -47,6 +47,7 @@ export async function pushLocalToSupabase(): Promise<SupabaseSyncResult> {
             numeric_price: t.numericPrice,
             category: t.category,
             one_line_opinion: t.oneLineOpinion,
+            publication_date: t.publicationDate || null,
             updated_at: new Date().toISOString()
           })),
           { onConflict: 'slug' }
@@ -151,7 +152,8 @@ export async function pullSupabaseToLocal(): Promise<SupabaseSyncResult> {
           startingPrice: t.starting_price,
           numericPrice: t.numeric_price,
           category: t.category,
-          oneLineOpinion: t.one_line_opinion
+          oneLineOpinion: t.one_line_opinion,
+          publicationDate: t.publication_date || undefined
         });
       });
     }
@@ -226,4 +228,101 @@ export async function pullSupabaseToLocal(): Promise<SupabaseSyncResult> {
       message: error.message || 'Authentication or schema validation error.'
     };
   }
+}
+
+/* ============================================================
+   Targeted batch upserts — used by the Content Pipeline bulk
+   uploader to push exactly the queued batch straight to the
+   cloud (so scheduled drops go live for every visitor without
+   pushing the entire local overlay).
+   ============================================================ */
+
+export async function pushToolsBatch(tools: Tool[]): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, message: 'Supabase credentials are not configured.' };
+  if (tools.length === 0) return { success: true, message: 'No tools to push.', count: 0 };
+
+  const { error } = await supabase.from('saas_tools').upsert(
+    tools.map(t => ({
+      slug: t.slug,
+      name: t.name,
+      starting_price: t.startingPrice,
+      numeric_price: t.numericPrice,
+      category: t.category,
+      one_line_opinion: t.oneLineOpinion,
+      publication_date: t.publicationDate || null,
+      updated_at: new Date().toISOString()
+    })),
+    { onConflict: 'slug' }
+  );
+
+  if (error) return { success: false, message: `Tools batch upsert failed: ${error.message}` };
+  return { success: true, message: `Pushed ${tools.length} tools to Supabase.`, count: tools.length };
+}
+
+export async function pushReviewsBatch(reviews: Review[]): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, message: 'Supabase credentials are not configured.' };
+  if (reviews.length === 0) return { success: true, message: 'No reviews to push.', count: 0 };
+
+  const { error } = await supabase.from('saas_reviews').upsert(
+    reviews.map(r => ({
+      slug: r.slug,
+      title: r.title,
+      tool_a: r.toolA,
+      tool_b: r.toolB,
+      category: r.category,
+      excerpt: r.excerpt,
+      read_time_minutes: r.readTimeMinutes,
+      publication_date: r.publicationDate,
+      verdict: r.verdict,
+      winner_slug: r.winnerSlug,
+      hot_take_quote: r.hotTakeQuote,
+      final_verdict_paragraph: r.finalVerdictParagraph,
+      best_for_a: r.bestForA,
+      best_for_b: r.bestForB,
+      table_rows: r.tableRows,
+      updated_at: new Date().toISOString()
+    })),
+    { onConflict: 'slug' }
+  );
+
+  if (error) return { success: false, message: `Reviews batch upsert failed: ${error.message}` };
+  return { success: true, message: `Pushed ${reviews.length} reviews to Supabase.`, count: reviews.length };
+}
+
+export async function pushBlogsBatch(blogs: BlogPost[]): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, message: 'Supabase credentials are not configured.' };
+  if (blogs.length === 0) return { success: true, message: 'No blog posts to push.', count: 0 };
+
+  const { error } = await supabase.from('saas_blog_posts').upsert(
+    blogs.map(b => ({
+      slug: b.slug,
+      title: b.title,
+      issue_number: b.issueNumber,
+      excerpt: b.excerpt,
+      read_time: b.readTime,
+      publication_date: b.publicationDate,
+      category: b.category,
+      content_markdown: b.contentMarkdown,
+      updated_at: new Date().toISOString()
+    })),
+    { onConflict: 'slug' }
+  );
+
+  if (error) return { success: false, message: `Blog posts batch upsert failed: ${error.message}` };
+  return { success: true, message: `Pushed ${blogs.length} blog posts to Supabase.`, count: blogs.length };
+}
+
+/** Delete a single row by slug from one of the catalogue tables. */
+export async function deleteSupabaseRow(
+  table: 'saas_tools' | 'saas_reviews' | 'saas_blog_posts',
+  slug: string,
+): Promise<SupabaseSyncResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, message: 'Supabase credentials are not configured.' };
+  const { error } = await supabase.from(table).delete().eq('slug', slug);
+  if (error) return { success: false, message: `Delete failed: ${error.message}` };
+  return { success: true, message: `Removed ${slug} from ${table}.` };
 }

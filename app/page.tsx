@@ -56,9 +56,13 @@ export default function Page() {
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    import('@/lib/clientDb').then((db) => {
-      setActiveReviews(db.getMergedReviews());
-      setActiveTools(db.getMergedTools());
+    import('@/lib/contentSource').then(async (src) => {
+      const [reviews, tools] = await Promise.all([
+        src.getPublishedReviews(),
+        src.getPublishedTools(),
+      ]);
+      setActiveReviews(reviews);
+      setActiveTools(tools);
       setIsLoading(false);
     });
   }, []);

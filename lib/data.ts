@@ -23,6 +23,10 @@ export interface Tool {
   category: CategorySlug;
   oneLineOpinion: string;
   iconUrl?: string;
+  // Optional ISO timestamp. When set in the future the tool stays hidden
+  // from the public directory until its moment arrives (drip-feed publishing).
+  // Baseline tools omit it and are therefore always live.
+  publicationDate?: string;
 }
 
 export interface Review {

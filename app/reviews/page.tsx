@@ -8,7 +8,7 @@ import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ReviewCardSkeleton } from '@/components/Skeletons';
-import { REVIEWS, Review } from '@/lib/data';
+import { Review } from '@/lib/data';
 import { Grid, HelpCircle, ArrowRight } from 'lucide-react';
 
 export default function ReviewsPage() {
@@ -16,8 +16,8 @@ export default function ReviewsPage() {
   const [activeReviews, setActiveReviews] = useState<Review[]>([]);
 
   useEffect(() => {
-    import('@/lib/clientDb').then((db) => {
-      setActiveReviews(db.getMergedReviews());
+    import('@/lib/contentSource').then(async (src) => {
+      setActiveReviews(await src.getPublishedReviews());
       setIsLoading(false);
     });
   }, []);

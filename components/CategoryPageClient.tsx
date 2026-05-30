@@ -25,13 +25,20 @@ export function CategoryPageClient({
   relatedCategories,
 }: CategoryPageClientProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [tools, setTools] = useState<Tool[]>(categoryTools);
+  const [reviews, setReviews] = useState<Review[]>(categoryReviews);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    import('@/lib/contentSource').then(async (src) => {
+      const [allTools, allReviews] = await Promise.all([
+        src.getPublishedTools(),
+        src.getPublishedReviews(),
+      ]);
+      setTools(allTools.filter((t) => t.category === category.slug));
+      setReviews(allReviews.filter((r) => r.category === category.slug));
       setIsLoading(false);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, []);
+    });
+  }, [category.slug]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -79,12 +86,12 @@ export function CategoryPageClient({
             <SectionHeading 
               title="Verified Tools Directory Index" 
               eyebrow="Market coverage" 
-              emphasized="Index" 
-              meta={`${categoryTools.length} Listed`}
+              emphasized="Index"
+              meta={`${tools.length} Listed`}
             />
 
             {isLoading ? (
-              <TableSkeleton rowsCount={Math.max(3, categoryTools.length)} columnsCount={3} theme="silver" />
+              <TableSkeleton rowsCount={Math.max(3, tools.length)} columnsCount={3} theme="silver" />
             ) : (
               <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-[0_1px_3px_rgba(15,23,42,0.01)] text-xs">
                 <div className="grid grid-cols-1 md:grid-cols-12 bg-slate-50 border-b border-slate-200 p-3.5 font-bold text-slate-700">
@@ -94,8 +101,8 @@ export function CategoryPageClient({
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {categoryTools.length > 0 ? (
-                    categoryTools.map((tool) => (
+                  {tools.length > 0 ? (
+                    tools.map((tool) => (
                       <div 
                         id={`tool-identity-row-${tool.slug}`}
                         key={tool.slug} 
@@ -126,7 +133,7 @@ export function CategoryPageClient({
           <AdContainer layoutType="top-banner" slotId={`cat-${category.slug}-above-reviews`} />
 
           {/* Section 2: Published review matrices for this category */}
-          {categoryReviews.length > 0 && (
+          {reviews.length > 0 && (
             <section id="category-matrices" className="mb-12 mt-8">
               <SectionHeading 
                 title={`${category.name} Comparison Matrices`} 
@@ -136,11 +143,11 @@ export function CategoryPageClient({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {isLoading ? (
-                  Array.from({ length: Math.min(2, categoryReviews.length) }).map((_, idx) => (
+                  Array.from({ length: Math.min(2, reviews.length) }).map((_, idx) => (
                     <ReviewCardSkeleton key={idx} variant="default" />
                   ))
                 ) : (
-                  categoryReviews.map((review) => (
+                  reviews.map((review) => (
                     <ReviewCard key={review.slug} review={review} variant="default" />
                   ))
                 )}

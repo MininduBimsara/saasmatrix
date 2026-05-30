@@ -77,12 +77,10 @@ export function Hero3DScene() {
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
         
-        <PresentationControls 
-          global 
-          config={{ mass: 2, tension: 500 }} 
-          snap={{ mass: 4, tension: 1500 }} 
-          rotation={[0, 0.3, 0]} 
-          polar={[-Math.PI / 3, Math.PI / 3]} 
+        <PresentationControls
+          global
+          rotation={[0, 0.3, 0]}
+          polar={[-Math.PI / 3, Math.PI / 3]}
           azimuth={[-Math.PI / 1.4, Math.PI / 2]}
         >
           <AbstractShapes />

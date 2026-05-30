@@ -32,21 +32,23 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    Promise.all([
-      import('@/lib/clientDb')
-    ]).then(([db]) => {
-      const allReviews = db.getMergedReviews();
-      const allTools = db.getMergedTools();
-      
+    import('@/lib/contentSource').then(async (src) => {
+      const [allReviews, allTools] = await Promise.all([
+        src.getPublishedReviews(),
+        src.getAllTools(),
+      ]);
+
       const foundReview = allReviews.find(r => r.slug === slug);
-      const activeReview = foundReview || staticReview;
-      
-      if (activeReview) {
-        setReview(activeReview);
-        const tA = allTools.find(t => t.slug === activeReview.toolA);
-        const tB = allTools.find(t => t.slug === activeReview.toolB);
+
+      if (foundReview) {
+        setReview(foundReview);
+        const tA = allTools.find(t => t.slug === foundReview.toolA);
+        const tB = allTools.find(t => t.slug === foundReview.toolB);
         setToolA(tA || null);
         setToolB(tB || null);
+      } else {
+        // Unknown slug, or the review is still scheduled — treat as not found.
+        setReview(null);
       }
       setIsLoading(false);
     });

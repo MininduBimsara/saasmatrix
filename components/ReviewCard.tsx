@@ -15,8 +15,8 @@ export function ReviewCard({ review, variant = 'default', theme = 'swiss' }: Rev
   const [toolB, setToolB] = React.useState<any>(null);
 
   React.useEffect(() => {
-    import('@/lib/clientDb').then((db) => {
-      const allTools = db.getMergedTools();
+    import('@/lib/contentSource').then(async (src) => {
+      const allTools = await src.getAllTools();
       setToolA(allTools.find(t => t.slug === review.toolA) || null);
       setToolB(allTools.find(t => t.slug === review.toolB) || null);
     });

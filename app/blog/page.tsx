@@ -14,8 +14,8 @@ export default function BlogIndexPage() {
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    import("@/lib/clientDb").then((db) => {
-      setActivePosts(db.getPublishedBlogPosts());
+    import("@/lib/contentSource").then(async (src) => {
+      setActivePosts(await src.getPublishedBlogPosts());
       setIsLoading(false);
     });
   }, []);

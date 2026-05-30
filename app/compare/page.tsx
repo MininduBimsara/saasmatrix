@@ -21,39 +21,46 @@ export default function ComparePage() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [tools, setTools] = useState<Tool[]>(TOOLS);
+  const [reviews, setReviews] = useState<Review[]>(REVIEWS);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    import('@/lib/contentSource').then(async (src) => {
+      const [publishedTools, publishedReviews] = await Promise.all([
+        src.getPublishedTools(),
+        src.getPublishedReviews(),
+      ]);
+      setTools(publishedTools);
+      setReviews(publishedReviews);
       setIsLoading(false);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [slugA, slugB, selectedCategory]);
-
-  const availableCategories = useMemo(() => {
-    return CATEGORIES.filter(c => TOOLS.filter(t => t.category === c.slug).length >= 2);
+    });
   }, []);
 
+  const availableCategories = useMemo(() => {
+    return CATEGORIES.filter(c => tools.filter(t => t.category === c.slug).length >= 2);
+  }, [tools]);
+
   const filteredTools = useMemo(() => {
-    return TOOLS.filter(t => t.category === selectedCategory);
-  }, [selectedCategory]);
+    return tools.filter(t => t.category === selectedCategory);
+  }, [selectedCategory, tools]);
 
   // Lookup full tool entities
   const toolA = useMemo(() => {
-    return TOOLS.find((t) => t.slug === slugA) || TOOLS[0];
-  }, [slugA]);
+    return tools.find((t) => t.slug === slugA) || tools[0];
+  }, [slugA, tools]);
 
   const toolB = useMemo(() => {
-    return TOOLS.find((t) => t.slug === slugB) || TOOLS[1];
-  }, [slugB]);
+    return tools.find((t) => t.slug === slugB) || tools[1];
+  }, [slugB, tools]);
 
   // Check if published review exists for this pairing
   const existingReview = useMemo(() => {
-    return REVIEWS.find(
+    return reviews.find(
       (r) => 
         (r.toolA === slugA && r.toolB === slugB) || 
         (r.toolA === slugB && r.toolB === slugA)
     );
-  }, [slugA, slugB]);
+  }, [slugA, slugB, reviews]);
 
   // Handle mock subscription logic for publishing notifications
   const handleNotifyMe = (e: React.FormEvent) => {
@@ -69,7 +76,7 @@ export default function ComparePage() {
     const newCat = e.target.value;
     setSelectedCategory(newCat);
     setIsLoading(true);
-    const newTools = TOOLS.filter(t => t.category === newCat);
+    const newTools = tools.filter(t => t.category === newCat);
     if (newTools.length >= 2) {
       setSlugA(newTools[0].slug);
       setSlugB(newTools[1].slug);

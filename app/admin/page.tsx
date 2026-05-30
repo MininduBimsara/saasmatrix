@@ -39,10 +39,26 @@ import {
   DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
   rescheduleBlogPosts,
 } from "@/lib/blogSchedule";
+import {
+  staggerPublicationDates,
+  rescheduleItems,
+  filterScheduled,
+  filterPublished,
+  formatScheduleDate,
+  hoursUntilPublish,
+  slugify,
+} from "@/lib/contentSchedule";
 
 import AdminLogin from "@/components/AdminLogin";
 import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase";
-import { pushLocalToSupabase, pullSupabaseToLocal } from "@/lib/supabaseDb";
+import {
+  pushLocalToSupabase,
+  pullSupabaseToLocal,
+  pushToolsBatch,
+  pushReviewsBatch,
+  pushBlogsBatch,
+  deleteSupabaseRow,
+} from "@/lib/supabaseDb";
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 import { logAdminAction } from "@/lib/auditLog";
 
@@ -170,6 +186,62 @@ export default function AdminPage() {
       .slice(0, 16);
   });
   const [pipelineIntervalHours, setPipelineIntervalHours] = useState<number>(
+    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+  );
+
+  // Which content type is active inside the unified Content Pipeline tab
+  const [pipelineSubTab, setPipelineSubTab] = useState<
+    "blog" | "review" | "tool"
+  >("blog");
+
+  // Shared "now (local)" helper for default datetime-local inputs
+  const defaultLocalDateTime = () => {
+    const now = new Date();
+    const offsetMinutes = now.getTimezoneOffset();
+    return new Date(now.getTime() - offsetMinutes * 60_000)
+      .toISOString()
+      .slice(0, 16);
+  };
+
+  // Reviews bulk scheduler states
+  const [bulkReviewJson, setBulkReviewJson] = useState<string>(`[
+  {
+    "title": "Asana vs ClickUp: which scales cheaper",
+    "toolA": "asana",
+    "toolB": "clickup",
+    "category": "project-management",
+    "excerpt": "A head-to-head on per-seat economics at 50+ users.",
+    "verdict": "editor-pick",
+    "winnerSlug": "clickup",
+    "hotTakeQuote": "ClickUp wins on price, Asana on polish.",
+    "finalVerdictParagraph": "For lean teams watching spend, ClickUp edges ahead.",
+    "bestForA": "Design-led teams",
+    "bestForB": "Budget-conscious ops",
+    "readTimeMinutes": 6,
+    "tableRows": [
+      { "feature": "Starting price", "valueA": "$10.99/user", "valueB": "$7/user", "winner": "B" }
+    ]
+  }
+]`);
+  const [bulkReviewStartAt, setBulkReviewStartAt] = useState<string>(
+    defaultLocalDateTime,
+  );
+  const [bulkReviewIntervalHours, setBulkReviewIntervalHours] =
+    useState<number>(DEFAULT_BLOG_QUEUE_INTERVAL_HOURS);
+
+  // Tools bulk scheduler states
+  const [bulkToolJson, setBulkToolJson] = useState<string>(`[
+  {
+    "name": "Linear",
+    "category": "project-management",
+    "numericPrice": 8,
+    "oneLineOpinion": "Keyboard-first issue tracking with buttery-fast sync and opinionated workflows."
+  }
+]`);
+  const [bulkToolStartAt, setBulkToolStartAt] = useState<string>(
+    defaultLocalDateTime,
+  );
+  const [bulkToolIntervalHours, setBulkToolIntervalHours] = useState<number>(
     DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
   );
 
@@ -525,6 +597,7 @@ export default function AdminPage() {
     const db = await import("@/lib/clientDb");
     db.saveCustomTool(toolForm as Tool);
     logAdminAction({ action: 'create', entity: 'tool', entitySlug: toolForm.slug, details: { name: toolForm.name } });
+    await pushBatchToCloud("tool", [toolForm as Tool]);
 
     triggerSuccessAlert(
       `Tool "${toolForm.name}" compiled and saved into the index database!`,
@@ -549,6 +622,7 @@ export default function AdminPage() {
     const db = await import("@/lib/clientDb");
     db.deleteCustomTool(slug);
     logAdminAction({ action: 'delete', entity: 'tool', entitySlug: slug });
+    if (supabaseActive) await deleteSupabaseRow("saas_tools", slug);
     triggerSuccessAlert("Tool removed successfully!");
     loadDatabase();
   };
@@ -584,6 +658,7 @@ export default function AdminPage() {
     const db = await import("@/lib/clientDb");
     db.saveCustomReview(completeReview);
     logAdminAction({ action: 'create', entity: 'review', entitySlug: reviewForm.slug, details: { title: reviewForm.title } });
+    await pushBatchToCloud("review", [completeReview]);
 
     triggerSuccessAlert(`Review matrix "${reviewForm.title}" synchronized!`);
 
@@ -614,6 +689,7 @@ export default function AdminPage() {
     const db = await import("@/lib/clientDb");
     db.deleteCustomReview(slug);
     logAdminAction({ action: 'delete', entity: 'review', entitySlug: slug });
+    if (supabaseActive) await deleteSupabaseRow("saas_reviews", slug);
     triggerSuccessAlert("Comparison Review list entry wiped!");
     loadDatabase();
   };
@@ -626,6 +702,7 @@ export default function AdminPage() {
     const db = await import("@/lib/clientDb");
     db.saveCustomBlogPost(blogForm);
     logAdminAction({ action: 'create', entity: 'blog_post', entitySlug: blogForm.slug, details: { title: blogForm.title, issueNumber: blogForm.issueNumber } });
+    await pushBatchToCloud("blog", [blogForm]);
 
     triggerSuccessAlert(
       `BlogPost essay Issue #${blogForm.issueNumber} successfully published!`,
@@ -668,6 +745,7 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomBlogPosts(parsed.drafts);
+    await pushBatchToCloud("blog", parsed.drafts);
 
     triggerSuccessAlert(
       `Queued ${parsed.drafts.length} articles. Each post is spaced ${bulkBlogIntervalHours} hours apart starting ${formatBlogPublicationDate(parsed.drafts[0].publicationDate)}.`,
@@ -698,6 +776,269 @@ export default function AdminPage() {
     db.saveCustomBlogPosts(rescheduled);
 
     triggerSuccessAlert(`Pipeline successfully rescheduled! Items will now dispatch every ${pipelineIntervalHours} hours.`);
+    await pushBatchToCloud("blog", rescheduled);
+    loadDatabase();
+  };
+
+  /* ==========================================
+     UNIFIED CONTENT PIPELINE (reviews + tools)
+     ========================================== */
+
+  // Push a freshly queued / rescheduled batch straight to Supabase so the
+  // staggered drops go live for every visitor (not just this browser).
+  const pushBatchToCloud = async (
+    type: "blog" | "review" | "tool",
+    items: any[],
+  ) => {
+    if (!supabaseActive || items.length === 0) return;
+    try {
+      if (type === "tool") await pushToolsBatch(items as Tool[]);
+      else if (type === "review") await pushReviewsBatch(items as Review[]);
+      else await pushBlogsBatch(items as BlogPost[]);
+    } catch (err) {
+      console.warn("Cloud batch push failed:", err);
+    }
+  };
+
+  const parseBulkReviewDrafts = (): {
+    drafts: Review[];
+    error: string | null;
+  } => {
+    try {
+      const parsed = JSON.parse(bulkReviewJson);
+      if (!Array.isArray(parsed)) {
+        return {
+          drafts: [],
+          error: "Bulk input must be a JSON array of review objects.",
+        };
+      }
+
+      const normalized: Review[] = parsed.map((item: any, index: number) => {
+        const title = String(item?.title || "").trim();
+        const toolA = String(item?.toolA || "").trim();
+        const toolB = String(item?.toolB || "").trim();
+        const category = String(item?.category || "").trim();
+        const excerpt = String(item?.excerpt || "").trim();
+
+        if (!title || !toolA || !toolB || !category || !excerpt) {
+          throw new Error(
+            `Row ${index + 1} is missing title, toolA, toolB, category, or excerpt.`,
+          );
+        }
+
+        return {
+          slug: String(item?.slug || "").trim() || slugify(title),
+          title,
+          toolA,
+          toolB,
+          category: category as CategorySlug,
+          excerpt,
+          readTimeMinutes: Number(item?.readTimeMinutes) || 5,
+          publicationDate: new Date().toISOString(),
+          verdict: (item?.verdict || "editor-pick") as Review["verdict"],
+          winnerSlug: String(item?.winnerSlug || toolA).trim(),
+          hotTakeQuote: String(item?.hotTakeQuote || "").trim(),
+          finalVerdictParagraph: String(
+            item?.finalVerdictParagraph || "",
+          ).trim(),
+          bestForA: String(item?.bestForA || "").trim(),
+          bestForB: String(item?.bestForB || "").trim(),
+          tableRows: Array.isArray(item?.tableRows) ? item.tableRows : [],
+        };
+      });
+
+      const startAt = new Date(bulkReviewStartAt);
+      if (Number.isNaN(startAt.getTime())) {
+        return { drafts: [], error: "Bulk start date is invalid." };
+      }
+
+      return {
+        drafts: staggerPublicationDates(
+          normalized,
+          startAt,
+          bulkReviewIntervalHours,
+        ),
+        error: null,
+      };
+    } catch (error: any) {
+      return {
+        drafts: [],
+        error: error?.message || "Unable to parse the bulk review payload.",
+      };
+    }
+  };
+
+  const parseBulkToolDrafts = (): {
+    drafts: Tool[];
+    error: string | null;
+  } => {
+    try {
+      const parsed = JSON.parse(bulkToolJson);
+      if (!Array.isArray(parsed)) {
+        return {
+          drafts: [],
+          error: "Bulk input must be a JSON array of tool objects.",
+        };
+      }
+
+      const normalized: Tool[] = parsed.map((item: any, index: number) => {
+        const name = String(item?.name || "").trim();
+        const category = String(item?.category || "").trim();
+        const oneLineOpinion = String(item?.oneLineOpinion || "").trim();
+
+        if (!name || !category || !oneLineOpinion) {
+          throw new Error(
+            `Row ${index + 1} is missing name, category, or oneLineOpinion.`,
+          );
+        }
+
+        const numericPrice = Number(item?.numericPrice) || 0;
+
+        return {
+          slug: String(item?.slug || "").trim() || slugify(name),
+          name,
+          category: category as CategorySlug,
+          numericPrice,
+          startingPrice:
+            String(item?.startingPrice || "").trim() || `$${numericPrice}/mo`,
+          oneLineOpinion,
+          iconUrl: String(item?.iconUrl || "").trim() || undefined,
+          publicationDate: new Date().toISOString(),
+        };
+      });
+
+      const startAt = new Date(bulkToolStartAt);
+      if (Number.isNaN(startAt.getTime())) {
+        return { drafts: [], error: "Bulk start date is invalid." };
+      }
+
+      return {
+        drafts: staggerPublicationDates(
+          normalized,
+          startAt,
+          bulkToolIntervalHours,
+        ),
+        error: null,
+      };
+    } catch (error: any) {
+      return {
+        drafts: [],
+        error: error?.message || "Unable to parse the bulk tool payload.",
+      };
+    }
+  };
+
+  const handleSaveBulkReviewQueue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { drafts, error } = parseBulkReviewDrafts();
+    if (error) {
+      triggerSuccessAlert(error);
+      return;
+    }
+    if (drafts.length === 0) {
+      triggerSuccessAlert("Review batch is empty. Add at least one review.");
+      return;
+    }
+
+    const db = await import("@/lib/clientDb");
+    drafts.forEach((r) => db.saveCustomReview(r));
+    drafts.forEach((r) =>
+      logAdminAction({
+        action: "create",
+        entity: "review",
+        entitySlug: r.slug,
+        details: { title: r.title, scheduled: r.publicationDate },
+      }),
+    );
+
+    await pushBatchToCloud("review", drafts);
+    triggerSuccessAlert(
+      `Queued ${drafts.length} reviews, spaced ${bulkReviewIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
+    );
+    setBulkReviewJson("[]");
+    loadDatabase();
+  };
+
+  const handleSaveBulkToolQueue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { drafts, error } = parseBulkToolDrafts();
+    if (error) {
+      triggerSuccessAlert(error);
+      return;
+    }
+    if (drafts.length === 0) {
+      triggerSuccessAlert("Tool batch is empty. Add at least one tool.");
+      return;
+    }
+
+    const db = await import("@/lib/clientDb");
+    drafts.forEach((t) => db.saveCustomTool(t));
+    drafts.forEach((t) =>
+      logAdminAction({
+        action: "create",
+        entity: "tool",
+        entitySlug: t.slug,
+        details: { name: t.name, scheduled: t.publicationDate },
+      }),
+    );
+
+    await pushBatchToCloud("tool", drafts);
+    triggerSuccessAlert(
+      `Queued ${drafts.length} tools, spaced ${bulkToolIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
+    );
+    setBulkToolJson("[]");
+    loadDatabase();
+  };
+
+  const handleRescheduleReviewPipeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const startAt = new Date(bulkReviewStartAt);
+    if (Number.isNaN(startAt.getTime())) {
+      triggerSuccessAlert("Pipeline start date is invalid.");
+      return;
+    }
+    const scheduled = filterScheduled(reviewsList);
+    if (scheduled.length === 0) {
+      triggerSuccessAlert("No scheduled reviews to reschedule.");
+      return;
+    }
+    const rescheduled = rescheduleItems(
+      scheduled,
+      startAt,
+      bulkReviewIntervalHours,
+    );
+    const db = await import("@/lib/clientDb");
+    rescheduled.forEach((r) => db.saveCustomReview(r));
+    await pushBatchToCloud("review", rescheduled);
+    triggerSuccessAlert(
+      `Review pipeline rescheduled — one drop every ${bulkReviewIntervalHours}h.`,
+    );
+    loadDatabase();
+  };
+
+  const handleRescheduleToolPipeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const startAt = new Date(bulkToolStartAt);
+    if (Number.isNaN(startAt.getTime())) {
+      triggerSuccessAlert("Pipeline start date is invalid.");
+      return;
+    }
+    const scheduled = filterScheduled(toolsList);
+    if (scheduled.length === 0) {
+      triggerSuccessAlert("No scheduled tools to reschedule.");
+      return;
+    }
+    const rescheduled = rescheduleItems(
+      scheduled,
+      startAt,
+      bulkToolIntervalHours,
+    );
+    const db = await import("@/lib/clientDb");
+    rescheduled.forEach((t) => db.saveCustomTool(t));
+    await pushBatchToCloud("tool", rescheduled);
+    triggerSuccessAlert(
+      `Tool pipeline rescheduled — one drop every ${bulkToolIntervalHours}h.`,
+    );
     loadDatabase();
   };
 
@@ -705,6 +1046,7 @@ export default function AdminPage() {
   const handleDeleteBlog = async (slug: string) => {
     const db = await import("@/lib/clientDb");
     db.deleteCustomBlogPost(slug);
+    if (supabaseActive) await deleteSupabaseRow("saas_blog_posts", slug);
     triggerSuccessAlert("Article post removed from dispatch listings!");
     loadDatabase();
   };
@@ -996,7 +1338,7 @@ export default function AdminPage() {
                 }`}
               >
                 <CloudLightning className="h-4 w-4" />
-                <span>Manage Pipeline</span>
+                <span>Content Pipeline</span>
               </button>
 
               <button
@@ -2486,13 +2828,110 @@ export default function AdminPage() {
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                       <CloudLightning className="text-blue-600 h-6 w-6" />
-                      <span>Pipeline Schedule</span>
+                      <span>Content Pipeline</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
-                      Control the drip content pipeline, re-arrange upcoming
-                      dispatches, and adjust the interval gap between drops.
+                      Bulk-upload blogs, reviews, and tools, then let each batch
+                      drip-publish itself on a fixed cadence — no manual posting
+                      required. Items go live automatically as their scheduled
+                      time arrives.
                     </p>
                   </div>
+
+                  {/* Sub-tab selector: the three content sections */}
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["blog", "Blogs"],
+                        ["review", "Reviews"],
+                        ["tool", "Tools"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setPipelineSubTab(key)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                          pipelineSubTab === key
+                            ? "bg-slate-900 border-slate-900 text-white"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {pipelineSubTab === "blog" && (
+                  <>
+                  {/* ---- BLOG bulk uploader ---- */}
+                  <form
+                    onSubmit={handleSaveBulkBlogQueue}
+                    className="space-y-4 bg-emerald-50/40 p-4 border border-emerald-100 rounded-xl text-xs"
+                  >
+                    <div className="flex justify-between items-center pb-2 border-b border-emerald-100">
+                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                        Bulk-queue blog batch
+                      </h3>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        Drip every {bulkBlogIntervalHours}h
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="block font-bold text-slate-700">
+                          Batch start date/time
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={bulkBlogStartAt}
+                          onChange={(e) => setBulkBlogStartAt(e.target.value)}
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">
+                          Hours between drops
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={bulkBlogIntervalHours}
+                          onChange={(e) =>
+                            setBulkBlogIntervalHours(
+                              Number(e.target.value) ||
+                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                            )
+                          }
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block font-bold text-slate-700">
+                        Bulk article payload (JSON array)
+                      </label>
+                      <textarea
+                        rows={8}
+                        value={bulkBlogDraftJson}
+                        onChange={(e) => setBulkBlogDraftJson(e.target.value)}
+                        className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
+                      />
+                      <p className="text-[10px] text-slate-500">
+                        Each object needs `title`, `excerpt`, `category`, and
+                        `contentMarkdown`. Optional `slug`, `readTime`,
+                        `issueNumber`.
+                      </p>
+                    </div>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                    >
+                      <CloudUpload className="h-3.5 w-3.5" />
+                      <span>Queue Blog Batch</span>
+                    </button>
+                  </form>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
@@ -2620,10 +3059,363 @@ export default function AdminPage() {
                       </div>
                     ) : (
                       <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
-                        The pipeline is empty. Queue items from the Dispatch Post Editor first.
+                        The pipeline is empty. Queue items from the Blogs editor
+                        first.
                       </div>
                     )}
                   </div>
+                  </>
+                  )}
+
+                  {/* ============================================
+                     REVIEW PIPELINE SECTION
+                     ============================================ */}
+                  {pipelineSubTab === "review" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Published now
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {filterPublished(reviewsList).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Queued for later
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {filterScheduled(reviewsList).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Cadence
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {bulkReviewIntervalHours}h
+                          </span>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={handleSaveBulkReviewQueue}
+                        className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
+                      >
+                        <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                          <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                            Bulk-queue review batch
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="block font-bold text-slate-700">
+                              Batch start date/time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={bulkReviewStartAt}
+                              onChange={(e) =>
+                                setBulkReviewStartAt(e.target.value)
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Hours between drops
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={bulkReviewIntervalHours}
+                              onChange={(e) =>
+                                setBulkReviewIntervalHours(
+                                  Number(e.target.value) ||
+                                    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                                )
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block font-bold text-slate-700">
+                            Bulk review payload (JSON array)
+                          </label>
+                          <textarea
+                            rows={10}
+                            value={bulkReviewJson}
+                            onChange={(e) => setBulkReviewJson(e.target.value)}
+                            className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            Each object needs `title`, `toolA`, `toolB`,
+                            `category`, `excerpt`. Optional `slug`, `verdict`,
+                            `winnerSlug`, `hotTakeQuote`,
+                            `finalVerdictParagraph`, `bestForA`, `bestForB`,
+                            `readTimeMinutes`, `tableRows`.
+                          </p>
+                        </div>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                        >
+                          <CloudUpload className="h-3.5 w-3.5" />
+                          <span>Queue Review Batch</span>
+                        </button>
+                      </form>
+
+                      <form
+                        onSubmit={handleRescheduleReviewPipeline}
+                        className="flex flex-wrap items-end gap-3 bg-white p-4 border border-slate-200 rounded-xl text-xs"
+                      >
+                        <span className="font-bold text-slate-700 w-full">
+                          Reschedule the {filterScheduled(reviewsList).length}{" "}
+                          queued reviews using the start/cadence above:
+                        </span>
+                        <button
+                          type="submit"
+                          disabled={filterScheduled(reviewsList).length === 0}
+                          className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2 px-4 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span>Reschedule Review Pipeline</span>
+                        </button>
+                      </form>
+
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-slate-800 text-sm font-sans">
+                          Upcoming Queued Reviews
+                        </h3>
+                        {filterScheduled(reviewsList).length > 0 ? (
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                            <table className="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
+                                  <th className="p-3 font-bold">Review</th>
+                                  <th className="p-3 font-bold">Drop Schedule</th>
+                                  <th className="p-3 font-bold text-right">
+                                    Action
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filterScheduled(reviewsList).map((r) => (
+                                  <tr
+                                    key={r.slug}
+                                    className="hover:bg-slate-50/50"
+                                  >
+                                    <td className="p-3 font-bold text-blue-700">
+                                      {r.title}
+                                      <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                                        /{r.slug}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
+                                      {formatScheduleDate(r.publicationDate)}
+                                      <span className="block text-[9px] text-amber-600">
+                                        in {hoursUntilPublish(r.publicationDate)}h
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      <button
+                                        onClick={() => editReviewInForm(r)}
+                                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                      >
+                                        Edit Details
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
+                            No reviews queued. Paste a batch above to start the
+                            drip.
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* ============================================
+                     TOOL PIPELINE SECTION
+                     ============================================ */}
+                  {pipelineSubTab === "tool" && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Published now
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {filterPublished(toolsList).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Queued for later
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {filterScheduled(toolsList).length}
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Cadence
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {bulkToolIntervalHours}h
+                          </span>
+                        </div>
+                      </div>
+
+                      <form
+                        onSubmit={handleSaveBulkToolQueue}
+                        className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
+                      >
+                        <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                          <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                            Bulk-queue tool batch
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="block font-bold text-slate-700">
+                              Batch start date/time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={bulkToolStartAt}
+                              onChange={(e) =>
+                                setBulkToolStartAt(e.target.value)
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Hours between drops
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={bulkToolIntervalHours}
+                              onChange={(e) =>
+                                setBulkToolIntervalHours(
+                                  Number(e.target.value) ||
+                                    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                                )
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block font-bold text-slate-700">
+                            Bulk tool payload (JSON array)
+                          </label>
+                          <textarea
+                            rows={8}
+                            value={bulkToolJson}
+                            onChange={(e) => setBulkToolJson(e.target.value)}
+                            className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            Each object needs `name`, `category`,
+                            `oneLineOpinion`. Optional `slug`, `numericPrice`,
+                            `startingPrice`, `iconUrl`.
+                          </p>
+                        </div>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                        >
+                          <CloudUpload className="h-3.5 w-3.5" />
+                          <span>Queue Tool Batch</span>
+                        </button>
+                      </form>
+
+                      <form
+                        onSubmit={handleRescheduleToolPipeline}
+                        className="flex flex-wrap items-end gap-3 bg-white p-4 border border-slate-200 rounded-xl text-xs"
+                      >
+                        <span className="font-bold text-slate-700 w-full">
+                          Reschedule the {filterScheduled(toolsList).length}{" "}
+                          queued tools using the start/cadence above:
+                        </span>
+                        <button
+                          type="submit"
+                          disabled={filterScheduled(toolsList).length === 0}
+                          className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2 px-4 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span>Reschedule Tool Pipeline</span>
+                        </button>
+                      </form>
+
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-slate-800 text-sm font-sans">
+                          Upcoming Queued Tools
+                        </h3>
+                        {filterScheduled(toolsList).length > 0 ? (
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                            <table className="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
+                                  <th className="p-3 font-bold">Tool</th>
+                                  <th className="p-3 font-bold">Drop Schedule</th>
+                                  <th className="p-3 font-bold text-right">
+                                    Action
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {filterScheduled(toolsList).map((t) => (
+                                  <tr
+                                    key={t.slug}
+                                    className="hover:bg-slate-50/50"
+                                  >
+                                    <td className="p-3 font-bold text-blue-700">
+                                      {t.name}
+                                      <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                                        /{t.slug}
+                                      </span>
+                                    </td>
+                                    <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
+                                      {formatScheduleDate(t.publicationDate)}
+                                      <span className="block text-[9px] text-amber-600">
+                                        in {hoursUntilPublish(t.publicationDate)}h
+                                      </span>
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      <button
+                                        onClick={() => editToolInForm(t)}
+                                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                      >
+                                        Edit Details
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
+                            No tools queued. Paste a batch above to start the
+                            drip.
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

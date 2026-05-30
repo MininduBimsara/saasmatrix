@@ -21,12 +21,13 @@ export default function BlogDetailsClient({
   const [isLoading, setIsLoading] = useState<boolean>(!staticPost);
 
   useEffect(() => {
-    import("@/lib/clientDb").then((db) => {
-      const allPosts = db.getPublishedBlogPosts();
+    import("@/lib/contentSource").then(async (src) => {
+      const allPosts = await src.getPublishedBlogPosts();
       const found = allPosts.find((p) => p.slug === slug);
       if (found) {
         setPost(found);
-      } else if (!staticPost) {
+      } else {
+        // Not in the published set (unknown or still scheduled) — hide it.
         setPost(null);
       }
       setIsLoading(false);
