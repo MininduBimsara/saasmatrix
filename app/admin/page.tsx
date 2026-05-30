@@ -43,6 +43,8 @@ import {
 import AdminLogin from "@/components/AdminLogin";
 import { isSupabaseConfigured, getSupabaseClient } from "@/lib/supabase";
 import { pushLocalToSupabase, pullSupabaseToLocal } from "@/lib/supabaseDb";
+import { useIdleTimeout } from "@/hooks/useIdleTimeout";
+import { logAdminAction } from "@/lib/auditLog";
 
 export default function AdminPage() {
   // Administrative state checking & lockouts
@@ -350,26 +352,32 @@ export default function AdminPage() {
   }, [realtimeNotification]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const auth = window.localStorage.getItem("saasrooms-admin-authenticated");
-      // Deferred execution to prevent synchronous state cycles inside mounting bodies
-      Promise.resolve().then(() => {
-        setIsAuthenticated(auth === "true");
-      });
-    }
+    const checkSession = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setIsAuthenticated(false);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    // Deferred to avoid synchronous state cycles during mounting
+    Promise.resolve().then(checkSession);
   }, []);
 
-  const handleSignOut = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("saasrooms-admin-authenticated");
-      window.localStorage.removeItem("saasrooms-admin-provider");
-    }
+  const handleSignOut = async () => {
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut();
     }
     setIsAuthenticated(false);
   };
+
+  // Auto sign-out after 30 minutes of inactivity — only active when authenticated
+  useIdleTimeout(
+    () => { if (isAuthenticated) handleSignOut(); },
+    30 * 60 * 1000,
+  );
 
   const handlePushToSupabase = async () => {
     setSyncLoading(true);
@@ -516,6 +524,7 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomTool(toolForm as Tool);
+    logAdminAction({ action: 'create', entity: 'tool', entitySlug: toolForm.slug, details: { name: toolForm.name } });
 
     triggerSuccessAlert(
       `Tool "${toolForm.name}" compiled and saved into the index database!`,
@@ -539,6 +548,7 @@ export default function AdminPage() {
   const handleDeleteTool = async (slug: string) => {
     const db = await import("@/lib/clientDb");
     db.deleteCustomTool(slug);
+    logAdminAction({ action: 'delete', entity: 'tool', entitySlug: slug });
     triggerSuccessAlert("Tool removed successfully!");
     loadDatabase();
   };
@@ -573,6 +583,7 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomReview(completeReview);
+    logAdminAction({ action: 'create', entity: 'review', entitySlug: reviewForm.slug, details: { title: reviewForm.title } });
 
     triggerSuccessAlert(`Review matrix "${reviewForm.title}" synchronized!`);
 
@@ -602,6 +613,7 @@ export default function AdminPage() {
   const handleDeleteReview = async (slug: string) => {
     const db = await import("@/lib/clientDb");
     db.deleteCustomReview(slug);
+    logAdminAction({ action: 'delete', entity: 'review', entitySlug: slug });
     triggerSuccessAlert("Comparison Review list entry wiped!");
     loadDatabase();
   };
@@ -613,6 +625,7 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomBlogPost(blogForm);
+    logAdminAction({ action: 'create', entity: 'blog_post', entitySlug: blogForm.slug, details: { title: blogForm.title, issueNumber: blogForm.issueNumber } });
 
     triggerSuccessAlert(
       `BlogPost essay Issue #${blogForm.issueNumber} successfully published!`,
@@ -1303,27 +1316,38 @@ export default function AdminPage() {
                             <input
                               type="file"
                               id="toolIconUpload"
-                              accept="image/*"
+                              accept="image/png,image/jpeg,image/webp"
                               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    setToolForm((prev) => ({
-                                      ...prev,
-                                      iconUrl: reader.result as string,
-                                    }));
-                                  };
-                                  reader.readAsDataURL(file);
+                                if (!file) return;
+                                const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+                                const MAX_SIZE = 500 * 1024; // 500 KB
+                                if (!ALLOWED_TYPES.includes(file.type)) {
+                                  alert('Only PNG, JPG, and WebP files are allowed.');
+                                  e.target.value = '';
+                                  return;
                                 }
+                                if (file.size > MAX_SIZE) {
+                                  alert('File size must be under 500 KB.');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setToolForm((prev) => ({
+                                    ...prev,
+                                    iconUrl: reader.result as string,
+                                  }));
+                                };
+                                reader.readAsDataURL(file);
                               }}
                             />
                             <div className="text-[11px] text-slate-600 font-bold">
                               Click or Drop Brand Logo
                             </div>
                             <p className="text-[9px] text-slate-400 mt-0.5">
-                              Loads PNG, JPG, WebP, SVG data
+                              PNG, JPG, WebP only — max 500 KB
                             </p>
                           </div>
                         </div>
@@ -1335,15 +1359,15 @@ export default function AdminPage() {
                               Or Paste Remote URL:
                             </span>
                             <input
-                              type="text"
+                              type="url"
                               placeholder="e.g. https://domain.com/logo.png"
-                              value={toolForm.iconUrl || ""}
-                              onChange={(e) =>
-                                setToolForm((prev) => ({
-                                  ...prev,
-                                  iconUrl: e.target.value,
-                                }))
-                              }
+                              value={toolForm.iconUrl?.startsWith('data:') ? '' : (toolForm.iconUrl || "")}
+                              onChange={(e) => {
+                                const val = e.target.value.trim();
+                                // Only accept empty or valid HTTPS URLs
+                                if (val && !val.startsWith('https://')) return;
+                                setToolForm((prev) => ({ ...prev, iconUrl: val }));
+                              }}
                               className="w-full mt-1.5 p-2 border border-slate-250 bg-white rounded-lg text-[11px]"
                             />
                           </div>

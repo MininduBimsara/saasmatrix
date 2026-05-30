@@ -47,10 +47,6 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       }
 
       if (data?.session) {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('saasrooms-admin-authenticated', 'true');
-          window.localStorage.setItem('saasrooms-admin-provider', 'supabase');
-        }
         onLoginSuccess();
       } else {
         setErrorMsg('Invalid administrative credentials.');
