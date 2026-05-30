@@ -11,10 +11,7 @@ export function Header() {
   const pathname = usePathname();
 
   const navLinks = [
-    { label: 'Reviews', href: '/reviews', id: 'mobile-link-reviews' },
-    { label: 'Compare', href: '/compare', id: 'mobile-link-compare' },
     { label: 'Calculator', href: '/calculator', id: 'mobile-link-calculator' },
-    { label: 'Blog', href: '/blog', id: 'mobile-link-blog' },
     { label: 'About', href: '/about', id: 'mobile-link-about' },
   ];
 
@@ -65,6 +62,9 @@ export function Header() {
             </Link>
             <Link href="/reviews" className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
               Review
+            </Link>
+            <Link href="/blog" className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Blog
             </Link>
             <button type="button" onClick={handleSearchPillClick} className="text-xs font-medium text-slate-400 pl-4 pr-1 flex items-center gap-3 cursor-pointer outline-none hover:text-slate-600 bg-transparent border-none">
               Find comparisons

@@ -115,267 +115,215 @@ export default function Page() {
       <main id="homepage-root" className="flex flex-col">
         
         {/* SECTION 1: CATCHING, HERO INTERACTIVE EXPEDITION PANEL */}
-        <section className="relative bg-white pt-10 pb-16 lg:py-24 border-b border-slate-100 overflow-hidden">
+        <section className="relative bg-white pt-16 pb-16 lg:py-24 border-b border-slate-100 overflow-hidden text-center">
           {/* Subtle warm architectural backdrop circle */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-50/20 rounded-full blur-3xl -z-10 pointer-events-none" />
           <div className="absolute bottom-0 left-12 w-[300px] h-[300px] bg-amber-50/30 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              
-              {/* Left Side: Copywriting & High-Converting Search Console */}
-              <div className="lg:col-span-7 space-y-8">
-                
-                {/* Premium & Free tags */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-100/60 text-rose-600 px-4 py-1.5 rounded-full select-none">
-                    <Sparkles className="h-3.5 w-3.5 text-rose-500 animate-spin" />
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                      SaaS comparison remade &bull; Complete Integrity
-                    </span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100/60 text-emerald-600 px-4 py-1.5 rounded-full select-none">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                      100% Free of Charge
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.08] tracking-tight">
-                    Remaking the way <br />
-                    we compare <span className="text-rose-500 select-all selection:bg-rose-100 italic font-sans font-semibold">SaaS tools</span>.
-                  </h1>
-                  <p className="text-sm md:text-base leading-relaxed text-slate-500 max-w-xl">
-                    Analytical side-by-side matrices comparing accurate performance loads, licensing price traps, and legal GAAP compliance. Simple indices audited objectively in our clean-room laboratory.
-                  </p>
-                </div>
-
-                {/* Airbnb-style Dynamic Search Form console card */}
-                <div className="bg-white border border-slate-200/90 rounded-[32px] p-6 shadow-lg md:max-w-xl w-full">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-                    <Sliders className="h-3 w-3 text-rose-500" />
-                    Interactive Lab Comparator
-                  </h3>
-                  
-                  <form onSubmit={handleQuickCompareGo} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                      
-                      {/* Dropdown to select matrix comparison */}
-                      <div className="md:col-span-8 relative">
-                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
-                          Select Audited Matrix
-                        </label>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full text-left flex items-center justify-between text-xs font-semibold bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl py-3 px-4 text-slate-800 transition-colors focus:ring-2 focus:ring-rose-500/20 focus:outline-none cursor-pointer"
-                          >
-                            <span className="truncate">
-                              {selectedQuickReview 
-                                ? activeReviews.find(r => r.slug === selectedQuickReview)?.title 
-                                : "Choose an active study..."}
-                            </span>
-                            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          
-                          {isDropdownOpen && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                              <ul className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-64 overflow-y-auto py-2">
-                                <li
-                                  onClick={() => { setSelectedQuickReview(''); setIsDropdownOpen(false); }}
-                                  className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-500"
-                                >
-                                  Choose an active study...
-                                </li>
-                                {activeReviews.map((r) => {
-                                  const toolA = activeTools.find(t => t.slug === r.toolA);
-                                  const toolB = activeTools.find(t => t.slug === r.toolB);
-                                  return (
-                                    <li
-                                      key={r.slug}
-                                      onClick={() => { setSelectedQuickReview(r.slug); setIsDropdownOpen(false); }}
-                                      className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors border-t border-slate-50 first:border-0"
-                                    >
-                                      <div className="flex items-center -space-x-2 shrink-0">
-                                        {toolA?.iconUrl ? (
-                                          <img src={toolA.iconUrl} alt={toolA.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10" referrerPolicy="no-referrer" />
-                                        ) : (
-                                          <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
-                                            {toolA?.name?.substring(0, 2).toUpperCase() || 'A'}
-                                          </div>
-                                        )}
-                                        {toolB?.iconUrl ? (
-                                          <img src={toolB.iconUrl} alt={toolB.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0" referrerPolicy="no-referrer" />
-                                        ) : (
-                                          <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
-                                            {toolB?.name?.substring(0, 2).toUpperCase() || 'B'}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <span className="text-xs font-semibold text-slate-800 line-clamp-1">
-                                        {r.title}
-                                      </span>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Direct query trigger */}
-                      <div className="md:col-span-4 flex items-end">
-                        <button
-                          type="submit"
-                          disabled={!selectedQuickReview}
-                          style={{ minHeight: '44px' }}
-                          className={`w-full text-xs font-bold uppercase tracking-wider bg-slate-900 border border-transparent text-white px-5 rounded-2xl hover:bg-rose-600 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                            !selectedQuickReview ? 'opacity-50 cursor-not-allowed bg-slate-400' : ''
-                          }`}
-                        >
-                          Compare
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-
-                    </div>
-                  </form>
-
-                  {/* Real-time Dynamic Comparison Preview */}
-                  {selectedReviewObj && resolvedToolA && resolvedToolB && (
-                    <div className="mt-5 p-4 border border-rose-100 bg-rose-50/20 rounded-2xl animate-fade-in space-y-3">
-                      <div className="flex items-center justify-between text-[10px] font-black uppercase text-rose-500 tracking-wider">
-                        <span>Live Sandbox Preview</span>
-                        <span>{selectedReviewObj.readTimeMinutes} min study</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-11 items-center gap-3">
-                        {/* Tool A */}
-                        <div className="sm:col-span-5 bg-white p-3 rounded-xl border border-slate-150 shadow-xs flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            {resolvedToolA.iconUrl ? (
-                              <img
-                                src={resolvedToolA.iconUrl}
-                                alt={resolvedToolA.name}
-                                className="h-6 w-6 rounded-full object-contain shrink-0 border border-slate-200"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[9px] font-black uppercase shrink-0">
-                                {resolvedToolA.name.substring(0, 2).toUpperCase()}
-                              </div>
-                            )}
-                            <h4 className="text-xs font-bold text-slate-900 truncate">{resolvedToolA.name}</h4>
-                          </div>
-                          <span className="inline-block self-start text-[9px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {resolvedToolA.startingPrice}
-                          </span>
-                          <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">
-                            {resolvedToolA.oneLineOpinion}
-                          </p>
-                        </div>
-
-                        {/* VS Divider */}
-                        <div className="sm:col-span-1 flex justify-center">
-                          <span className="text-[10px] font-mono font-black text-rose-600 bg-rose-100 rounded-full h-5 w-5 flex items-center justify-center border border-rose-200">
-                            VS
-                          </span>
-                        </div>
-
-                        {/* Tool B */}
-                        <div className="sm:col-span-5 bg-white p-3 rounded-xl border border-slate-150 shadow-xs flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            {resolvedToolB.iconUrl ? (
-                              <img
-                                src={resolvedToolB.iconUrl}
-                                alt={resolvedToolB.name}
-                                className="h-6 w-6 rounded-full object-contain shrink-0 border border-slate-200"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[9px] font-black uppercase shrink-0">
-                                {resolvedToolB.name.substring(0, 2).toUpperCase()}
-                              </div>
-                            )}
-                            <h4 className="text-xs font-bold text-slate-900 truncate">{resolvedToolB.name}</h4>
-                          </div>
-                          <span className="inline-block self-start text-[9px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {resolvedToolB.startingPrice}
-                          </span>
-                          <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">
-                            {resolvedToolB.oneLineOpinion}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Excerpt context and quick insights */}
-                      <div className="bg-white border border-slate-150 rounded-xl p-3 text-[11px] text-slate-600 leading-relaxed font-sans">
-                        <span className="font-bold text-slate-900 uppercase text-[9px] tracking-wider block mb-0.5 text-rose-500">
-                          Comparative Focus:
-                        </span>
-                        {selectedReviewObj.excerpt}
-
-                        <div className="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[10px]">
-                          <div>
-                            <span className="font-bold text-slate-800 block">Best for {resolvedToolA.name}:</span>
-                            <p className="text-slate-500 italic line-clamp-2 leading-snug font-sans">{selectedReviewObj.bestForA}</p>
-                          </div>
-                          <div>
-                            <span className="font-bold text-slate-800 block">Best for {resolvedToolB.name}:</span>
-                            <p className="text-slate-500 italic line-clamp-2 leading-snug font-sans">{selectedReviewObj.bestForB}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 text-[11px] text-slate-450 font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
-                      No referral loops
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
-                      GAAP Audited
-                    </span>
-                  </div>
-                </div>
-
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+            
+            {/* Premium & Free tags */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+              <div className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-500 px-4 py-1.5 rounded-full select-none">
+                <Sparkles className="h-3 w-3" />
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  SAAS COMPARISON REMADE
+                </span>
               </div>
-
-              {/* Right Side: Interactive 3D Presentation Canvas */}
-              <div className="lg:col-span-5 w-full h-full min-h-[500px] flex items-center justify-center rounded-[40px] overflow-hidden bg-rose-50/5 border border-slate-100/50 shadow-sm relative">
-                <div className="absolute top-6 left-6 z-20 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl p-3 shadow-sm flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-rose-500" />
-                  <div>
-                    <div className="text-[9px] font-black uppercase text-slate-400">INTERACTIVE ELEMENT</div>
-                    <div className="text-[11px] font-bold text-slate-900 leading-none">DRAG TO ROTATE</div>
-                  </div>
-                </div>
-                <Hero3DScene />
+              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-500 px-4 py-1.5 rounded-full select-none">
+                <CheckCircle2 className="h-3 w-3" />
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  100% FREE OF CHARGE
+                </span>
               </div>
-
             </div>
 
-            {/* Monochrome Brand Streamer / Clients Ribbon below the fold */}
-            <div className="mt-16 pt-10 border-t border-slate-100/80 text-center space-y-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
-                Audited systems and partner integrations
-              </span>
-              <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4 opacity-50 select-none saturate-0 cursor-none">
-                <span className="font-extrabold text-sm text-slate-950 uppercase tracking-tight">KPMG SYNC</span>
-                <span className="font-black text-sm text-slate-950 uppercase tracking-widest">deloitte</span>
-                <span className="font-sans italic font-extrabold text-sm text-slate-950 uppercase">Saudi Cement</span>
-                <span className="font-mono font-bold text-[11px] tracking-wider text-slate-950 uppercase">Efficiency Cent</span>
-                <span className="font-sans italic text-sm text-slate-950">Yazdan</span>
-                <span className="font-mono text-xs tracking-widest text-slate-950 uppercase">BurgerFi</span>
-                <span className="font-extrabold text-sm tracking-widest text-slate-950">SHACE</span>
+            <div className="space-y-6 mb-10 w-full">
+              <h1 className="text-4xl md:text-6xl lg:text-[72px] font-black text-slate-900 leading-[1.05] tracking-tight">
+                Remaking the way <br />
+                we compare <span className="text-rose-500 italic font-serif font-normal">SaaS tools</span>.
+              </h1>
+              <p className="text-sm md:text-base leading-relaxed text-slate-500 max-w-2xl mx-auto font-medium">
+                Analytical side-by-side matrices comparing accurate performance loads, licensing price traps, and legal GAAP compliance &mdash; audited objectively in our clean-room laboratory.
+              </p>
+            </div>
+
+            {/* Airbnb-style Dynamic Search Form console card */}
+            <div className="bg-white border border-slate-200/80 rounded-[28px] p-2 shadow-sm w-full max-w-2xl mx-auto relative z-20">
+              <form onSubmit={handleQuickCompareGo} className="flex flex-col sm:flex-row items-center w-full gap-2">
+                {/* Dropdown to select matrix comparison */}
+                <div className="w-full relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="w-full text-left flex items-center justify-between text-sm font-semibold bg-white rounded-[20px] py-3.5 px-5 text-slate-800 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    <span className="truncate text-slate-600 font-medium">
+                      {selectedQuickReview 
+                        ? activeReviews.find(r => r.slug === selectedQuickReview)?.title 
+                        : "Choose an active study..."}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                      <ul className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-64 overflow-y-auto py-2 text-left">
+                        <li
+                          onClick={() => { setSelectedQuickReview(''); setIsDropdownOpen(false); }}
+                          className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-500"
+                        >
+                          Choose an active study...
+                        </li>
+                        {activeReviews.map((r) => {
+                          const toolA = activeTools.find(t => t.slug === r.toolA);
+                          const toolB = activeTools.find(t => t.slug === r.toolB);
+                          return (
+                            <li
+                              key={r.slug}
+                              onClick={() => { setSelectedQuickReview(r.slug); setIsDropdownOpen(false); }}
+                              className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors border-t border-slate-50 first:border-0"
+                            >
+                              <div className="flex items-center -space-x-2 shrink-0">
+                                {toolA?.iconUrl ? (
+                                  <img src={toolA.iconUrl} alt={toolA.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
+                                    {toolA?.name?.substring(0, 2).toUpperCase() || 'A'}
+                                  </div>
+                                )}
+                                {toolB?.iconUrl ? (
+                                  <img src={toolB.iconUrl} alt={toolB.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
+                                    {toolB?.name?.substring(0, 2).toUpperCase() || 'B'}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs font-semibold text-slate-800 line-clamp-1">
+                                {r.title}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
+
+                {/* Direct query trigger */}
+                <div className="w-full sm:w-auto shrink-0 pr-1">
+                  <button
+                    type="submit"
+                    disabled={!selectedQuickReview}
+                    style={{ minHeight: '44px' }}
+                    className={`w-full sm:w-auto text-[11px] font-bold uppercase tracking-widest bg-slate-950 border border-transparent text-white px-8 rounded-full hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                      !selectedQuickReview ? 'opacity-50 cursor-not-allowed bg-slate-800' : ''
+                    }`}
+                  >
+                    Compare
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              </form>
+              
+              <div className="flex items-center justify-center gap-6 mt-4 pb-3 text-[11px] text-slate-600 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
+                  No referral loops
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
+                  GAAP Audited
+                </span>
               </div>
+            </div>
+
+            {/* Real-time Dynamic Comparison Preview */}
+            {selectedReviewObj && resolvedToolA && resolvedToolB && (
+              <div className="mt-8 p-5 border border-rose-100 bg-rose-50/20 rounded-[28px] animate-fade-in space-y-4 max-w-2xl w-full text-left relative z-10">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase text-rose-500 tracking-wider">
+                  <span>Live Sandbox Preview</span>
+                  <span>{selectedReviewObj.readTimeMinutes} min study</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-11 items-center gap-3">
+                  {/* Tool A */}
+                  <div className="sm:col-span-5 bg-white p-4 rounded-2xl border border-slate-150 shadow-xs flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2.5">
+                      {resolvedToolA.iconUrl ? (
+                        <img
+                          src={resolvedToolA.iconUrl}
+                          alt={resolvedToolA.name}
+                          className="h-8 w-8 rounded-full object-contain shrink-0 border border-slate-200"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
+                          {resolvedToolA.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <h4 className="text-sm font-bold text-slate-900 truncate">{resolvedToolA.name}</h4>
+                    </div>
+                    <span className="inline-block self-start text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      {resolvedToolA.startingPrice}
+                    </span>
+                    <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">
+                      {resolvedToolA.oneLineOpinion}
+                    </p>
+                  </div>
+
+                  {/* VS Divider */}
+                  <div className="sm:col-span-1 flex justify-center">
+                    <span className="text-[11px] font-mono font-black text-rose-600 bg-rose-100 rounded-full h-7 w-7 flex items-center justify-center border border-rose-200">
+                      VS
+                    </span>
+                  </div>
+
+                  {/* Tool B */}
+                  <div className="sm:col-span-5 bg-white p-4 rounded-2xl border border-slate-150 shadow-xs flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2.5">
+                      {resolvedToolB.iconUrl ? (
+                        <img
+                          src={resolvedToolB.iconUrl}
+                          alt={resolvedToolB.name}
+                          className="h-8 w-8 rounded-full object-contain shrink-0 border border-slate-200"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
+                          {resolvedToolB.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <h4 className="text-sm font-bold text-slate-900 truncate">{resolvedToolB.name}</h4>
+                    </div>
+                    <span className="inline-block self-start text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      {resolvedToolB.startingPrice}
+                    </span>
+                    <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">
+                      {resolvedToolB.oneLineOpinion}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Excerpt context and quick insights */}
+                <div className="bg-white border border-slate-150 rounded-2xl p-4 text-xs text-slate-600 leading-relaxed font-sans">
+                  <span className="font-bold text-slate-900 uppercase text-[10px] tracking-wider block mb-1 text-rose-500">
+                    Comparative Focus:
+                  </span>
+                  {selectedReviewObj.excerpt}
+                </div>
+              </div>
+            )}
+
+            {/* Trust Row */}
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-[9px] sm:text-[10px] font-black tracking-widest uppercase text-slate-400 mt-16 sm:mt-20">
+              <span>TRUSTED BY 2,400+ BUYERS</span>
+              <span className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block"></span>
+              <span>184 AUDITED TOOLS</span>
+              <span className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block"></span>
+              <span>0 SPONSORED PLACEMENTS</span>
             </div>
 
           </div>

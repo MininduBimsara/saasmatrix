@@ -114,3 +114,22 @@ export function buildScheduledBlogPosts(
     };
   });
 }
+
+export function rescheduleBlogPosts(
+  scheduledPosts: BlogPost[],
+  startAt: Date,
+  intervalHours: number,
+): BlogPost[] {
+  // Ensure the posts are sorted by their current scheduled date
+  const sortedPosts = sortBlogPostsByPublishDate(scheduledPosts, "asc");
+
+  return sortedPosts.map((post, index) => {
+    const publishAt = new Date(
+      startAt.getTime() + index * intervalHours * 60 * 60 * 1000,
+    );
+    return {
+      ...post,
+      publicationDate: publishAt.toISOString(),
+    };
+  });
+}

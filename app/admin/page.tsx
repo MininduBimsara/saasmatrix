@@ -37,6 +37,7 @@ import {
   getPublishedBlogPosts,
   slugifyBlogText,
   DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+  rescheduleBlogPosts,
 } from "@/lib/blogSchedule";
 
 import AdminLogin from "@/components/AdminLogin";
@@ -57,7 +58,7 @@ export default function AdminPage() {
 
   // Navigation tab states
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "tools" | "reviews" | "blog" | "backend"
+    "dashboard" | "tools" | "reviews" | "blog" | "backend" | "pipeline"
   >("dashboard");
 
   // Merged database lists loaded on-client on-mount
@@ -155,6 +156,18 @@ export default function AdminPage() {
       .slice(0, 16);
   });
   const [bulkBlogIntervalHours, setBulkBlogIntervalHours] = useState<number>(
+    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+  );
+
+  // Pipeline management states
+  const [pipelineStartAt, setPipelineStartAt] = useState<string>(() => {
+    const now = new Date();
+    const offsetMinutes = now.getTimezoneOffset();
+    return new Date(now.getTime() - offsetMinutes * 60_000)
+      .toISOString()
+      .slice(0, 16);
+  });
+  const [pipelineIntervalHours, setPipelineIntervalHours] = useState<number>(
     DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
   );
 
@@ -651,6 +664,30 @@ export default function AdminPage() {
     loadDatabase();
   };
 
+  const handleReschedulePipeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const startAt = new Date(pipelineStartAt);
+    if (Number.isNaN(startAt.getTime())) {
+      triggerSuccessAlert("Pipeline start date is invalid.");
+      return;
+    }
+
+    const scheduled = getScheduledBlogPosts(blogsList);
+    if (scheduled.length === 0) {
+      triggerSuccessAlert("No scheduled items found in the pipeline to reschedule.");
+      return;
+    }
+
+    const rescheduled = rescheduleBlogPosts(scheduled, startAt, pipelineIntervalHours);
+    
+    const db = await import("@/lib/clientDb");
+    db.saveCustomBlogPosts(rescheduled);
+
+    triggerSuccessAlert(`Pipeline successfully rescheduled! Items will now dispatch every ${pipelineIntervalHours} hours.`);
+    loadDatabase();
+  };
+
   // Delete Blog Action
   const handleDeleteBlog = async (slug: string) => {
     const db = await import("@/lib/clientDb");
@@ -934,6 +971,19 @@ export default function AdminPage() {
               >
                 <BookOpen className="h-4 w-4" />
                 <span>Dispatch Post Editor</span>
+              </button>
+
+              <button
+                id="tab-pipeline-selector"
+                onClick={() => setActiveTab("pipeline")}
+                className={`w-full text-left font-sans text-xs font-bold p-3 rounded-lg border transition-all flex items-center gap-2.5 cursor-pointer ${
+                  activeTab === "pipeline"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                    : "bg-white border-slate-200 text-slate-605 hover:bg-slate-50"
+                }`}
+              >
+                <CloudLightning className="h-4 w-4" />
+                <span>Manage Pipeline</span>
               </button>
 
               <button
@@ -2405,7 +2455,156 @@ export default function AdminPage() {
               )}
 
               {/* ==================================================
-                 TAB 5: DATABASE BACKEND COUPLING (SUPABASE CONTROL CENTER)
+                 TAB 5: MANAGE PIPELINE
+                 ================================================== */}
+              {activeTab === "pipeline" && (
+                <div className="space-y-8 animate-fade-in">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                      <CloudLightning className="text-blue-600 h-6 w-6" />
+                      <span>Pipeline Schedule</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Control the drip content pipeline, re-arrange upcoming
+                      dispatches, and adjust the interval gap between drops.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                        Queued for dispatch
+                      </span>
+                      <span className="block text-2xl font-black text-slate-950 mt-1">
+                        {scheduledBlogsCount} items
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                        Current Pipeline Status
+                      </span>
+                      {scheduledBlogsCount > 0 ? (
+                        <span className="mt-1 flex items-center gap-2 text-emerald-700 font-bold">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                          Flowing
+                        </span>
+                      ) : (
+                        <span className="mt-1 flex items-center gap-2 text-rose-700 font-bold">
+                          <span className="h-2 w-2 rounded-full bg-rose-500" />
+                          Dry (Needs Content)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={handleReschedulePipeline}
+                    className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
+                  >
+                    <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                        Reschedule Active Pipeline
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">
+                          New baseline Start Date/Time
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={pipelineStartAt}
+                          onChange={(e) => setPipelineStartAt(e.target.value)}
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">
+                          Hours gap between queued posts
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={pipelineIntervalHours}
+                          onChange={(e) =>
+                            setPipelineIntervalHours(
+                              Number(e.target.value) ||
+                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                            )
+                          }
+                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={scheduledBlogsCount === 0}
+                      className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      <span>Reschedule Pipeline Now</span>
+                    </button>
+                  </form>
+
+                  {/* List Pipeline Items */}
+                  <div className="space-y-3">
+                    <h3 className="font-bold text-slate-800 text-sm font-sans">
+                      Upcoming Queued Drops
+                    </h3>
+                    {scheduledBlogsCount > 0 ? (
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
+                              <th className="p-3 font-bold">Issue Title</th>
+                              <th className="p-3 font-bold">Drop Schedule</th>
+                              <th className="p-3 font-bold text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {getScheduledBlogPosts(blogsList).map((b) => (
+                              <tr key={b.slug} className="hover:bg-slate-50/50">
+                                <td className="p-3">
+                                  <Link
+                                    href={`/blog/${b.slug}`}
+                                    target="_blank"
+                                    className="font-bold text-amber-600 hover:underline flex items-center gap-1"
+                                  >
+                                    <span>
+                                      Issue #{b.issueNumber} - {b.title}
+                                    </span>
+                                  </Link>
+                                </td>
+                                <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
+                                  {formatBlogPublicationDate(b.publicationDate)}
+                                </td>
+                                <td className="p-3 text-right">
+                                  <button
+                                    onClick={() => editBlogInForm(b)}
+                                    className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                  >
+                                    Edit Details
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
+                        The pipeline is empty. Queue items from the Dispatch Post Editor first.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ==================================================
+                 TAB 6: DATABASE BACKEND COUPLING (SUPABASE CONTROL CENTER)
                  ================================================== */}
               {activeTab === "backend" && (
                 <div className="space-y-8 animate-fade-in text-xs leading-relaxed text-slate-750 font-sans">
