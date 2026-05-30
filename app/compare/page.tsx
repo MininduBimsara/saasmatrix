@@ -7,12 +7,17 @@ import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
 import { CompareGridSkeleton } from '@/components/Skeletons';
-import { TOOLS, REVIEWS, Tool, Review } from '@/lib/data';
-import { Sparkles, ArrowRight, ArrowLeftRight, HelpCircle, Check, Mail, Bell } from 'lucide-react';
+import { TOOLS, REVIEWS, CATEGORIES, Tool, Review } from '@/lib/data';
+import { Sparkles, ArrowRight, ArrowLeftRight, HelpCircle, Check, Mail, Bell, Filter } from 'lucide-react';
 
 export default function ComparePage() {
-  const [slugA, setSlugA] = useState<string>(TOOLS[0].slug);
-  const [slugB, setSlugB] = useState<string>(TOOLS[1].slug);
+  const initialCategory = TOOLS[0].category;
+  const initialTools = TOOLS.filter(t => t.category === initialCategory);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [slugA, setSlugA] = useState<string>(initialTools[0].slug);
+  const [slugB, setSlugB] = useState<string>(initialTools[1].slug);
+  
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -22,7 +27,15 @@ export default function ComparePage() {
       setIsLoading(false);
     }, 450);
     return () => clearTimeout(timer);
-  }, [slugA, slugB]);
+  }, [slugA, slugB, selectedCategory]);
+
+  const availableCategories = useMemo(() => {
+    return CATEGORIES.filter(c => TOOLS.filter(t => t.category === c.slug).length >= 2);
+  }, []);
+
+  const filteredTools = useMemo(() => {
+    return TOOLS.filter(t => t.category === selectedCategory);
+  }, [selectedCategory]);
 
   // Lookup full tool entities
   const toolA = useMemo(() => {
@@ -52,6 +65,17 @@ export default function ComparePage() {
     }, 2000);
   };
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCat = e.target.value;
+    setSelectedCategory(newCat);
+    setIsLoading(true);
+    const newTools = TOOLS.filter(t => t.category === newCat);
+    if (newTools.length >= 2) {
+      setSlugA(newTools[0].slug);
+      setSlugB(newTools[1].slug);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Header />
@@ -73,6 +97,26 @@ export default function ComparePage() {
 
           {/* Selector Board row */}
           <section id="selector-board" className="bg-slate-50 border border-slate-200/80 p-6 rounded-2xl mb-10">
+            {/* Category Filter */}
+            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 pb-6 border-b border-slate-200">
+              <div className="flex items-center gap-2 text-slate-700 font-bold text-sm">
+                <Filter className="w-4 h-4 text-blue-600" />
+                <span>Filter by Category:</span>
+              </div>
+              <select
+                id="select-category"
+                value={selectedCategory}
+                onChange={handleCategoryChange}
+                className="w-full sm:w-auto text-sm font-sans font-medium bg-white text-slate-800 py-2.5 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
+              >
+                {availableCategories.map(c => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.emoji} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
               
               {/* Option A Selector */}
@@ -89,7 +133,7 @@ export default function ComparePage() {
                   }}
                   className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
                 >
-                  {TOOLS.map((t) => (
+                  {filteredTools.map((t) => (
                     <option key={t.slug} value={t.slug} disabled={t.slug === slugB}>
                       {t.name} (Starting {t.startingPrice})
                     </option>
@@ -121,7 +165,7 @@ export default function ComparePage() {
                   }}
                   className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
                 >
-                  {TOOLS.map((t) => (
+                  {filteredTools.map((t) => (
                     <option key={t.slug} value={t.slug} disabled={t.slug === slugA}>
                       {t.name} (Starting {t.startingPrice})
                     </option>
@@ -223,12 +267,7 @@ export default function ComparePage() {
                       <div className="text-slate-605 font-semibold text-[11px] text-emerald-600 font-mono">Tested Real Yield</div>
                     </div>
 
-                    {/* Row 4: Security Verification */}
-                    <div className="grid grid-cols-3 p-4 items-center gap-2">
-                      <div className="font-semibold text-slate-800 text-xs">Trust Verification Rating</div>
-                      <div className="text-blue-600 font-mono font-bold">AdSense Safe</div>
-                      <div className="text-blue-600 font-mono font-bold">AdSense Safe</div>
-                    </div>
+
 
                   </div>
                 </div>

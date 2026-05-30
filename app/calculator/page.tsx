@@ -71,115 +71,109 @@ export default function CalculatorPage() {
   }, [report]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="bg-[#FAF9F6] min-h-screen text-slate-800 transition-colors duration-300 font-sans selection:bg-rose-100 flex flex-col">
       <Header />
 
-      <main id="roi-calculator-root" className="flex-grow py-12 font-sans">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main id="roi-calculator-root" className="flex-grow pt-10 pb-16 lg:py-24 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-50/20 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="absolute bottom-0 left-12 w-[300px] h-[300px] bg-amber-50/30 rounded-full blur-3xl -z-10 pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* Breadcrumb */}
-          <nav className="mb-6 text-xs text-slate-400 font-mono">
-            <Link href="/" className="hover:text-blue-600">HOME</Link> / ROI CALCULATOR
-          </nav>
+          <div className="text-center space-y-4 mb-14 max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black tracking-widest uppercase rounded-full bg-rose-50 border border-rose-100 text-rose-500 mb-2">
+              <TrendingUp className="h-3.5 w-3.5" />
+              Lead Generation Utility
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.08] tracking-tight">
+              Return-On-Spend <span className="text-rose-500 italic font-serif font-normal">Calculator</span>
+            </h1>
+            <p className="text-sm md:text-base leading-relaxed text-slate-500 font-medium">
+              Calculate if premium license costs translate to measurable productivity yield. Toggle hourly saves and rate matrices below to calculate payback velocities.
+            </p>
+          </div>
 
-          <SectionHeading 
-            title="SaaS Subscription Return-On-Spend Calculator" 
-            eyebrow="Lead Generation Utility" 
-            emphasized="Return-On-Spend" 
-          />
-
-          <p className="text-sm text-slate-600 max-w-3xl mb-12">
-            Calculate if premium license costs translate to measurable productivity yield. Toggle hourly saves and rate matrices below to calculate payback velocities.
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start mb-16">
             
             {/* Left Column: Sliders Controllers (7 / 12 width) */}
-            <div className="lg:col-span-7 bg-slate-50 border border-slate-205/60 p-6 md:p-8 rounded-2xl flex flex-col justify-between gap-6">
+            <div className="lg:col-span-7 space-y-6">
               
-              <h3 className="text-sm font-extrabold text-slate-905 tracking-wider uppercase font-mono pb-3 border-b border-slate-200">
-                Hourly and Resource Sliders
-              </h3>
-
               {/* Slider 1: Hours saved per week */}
-              <div id="slider-hours-saved" className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-slate-700">Hours Saved Per Week (Team Avg)</span>
-                  <span className="text-lg font-sans italic font-bold text-rose-500">{hoursSaved} hrs</span>
+              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-bold text-slate-900">Hours Saved Per Week (Team Avg)</span>
+                  <span className="text-2xl font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl">{hoursSaved} <span className="text-xs text-rose-400 uppercase tracking-widest ml-0.5">hrs</span></span>
                 </div>
                 <input
-                  id="input-hours-saved"
                   type="range"
                   min="1"
                   max="40"
                   value={hoursSaved}
                   onChange={(e) => setHoursSaved(Number(e.target.value))}
-                  className="w-full accent-rose-500 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  className="w-full accent-rose-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
                   <span>1 HR</span>
                   <span>40 HRS</span>
                 </div>
               </div>
 
               {/* Slider 2: Average Hourly Rate */}
-              <div id="slider-hourly-rate" className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-slate-700">Average Blended Hourly Rate</span>
-                  <span className="text-lg font-sans italic font-bold text-rose-500">${hourlyRate}/hr</span>
+              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-bold text-slate-900">Average Blended Hourly Rate</span>
+                  <span className="text-2xl font-black text-blue-500 bg-blue-50 px-3 py-1 rounded-xl"><span className="text-xs text-blue-400 mr-0.5">$</span>{hourlyRate}<span className="text-xs text-blue-400 uppercase tracking-widest ml-0.5">/hr</span></span>
                 </div>
                 <input
-                  id="input-hourly-rate"
                   type="range"
                   min="15"
                   max="150"
                   value={hourlyRate}
                   onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className="w-full accent-rose-500 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  className="w-full accent-blue-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
                   <span>$15/HR</span>
                   <span>$150/HR</span>
                 </div>
               </div>
 
               {/* Slider 3: Starting Seat Fee */}
-              <div id="slider-seat-cost" className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-slate-700">Tool Monthly Cost Per Seat</span>
-                  <span className="text-lg font-sans italic font-bold text-rose-500">${seatCost}/mo</span>
+              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-bold text-slate-900">Tool Monthly Cost Per Seat</span>
+                  <span className="text-2xl font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-xl"><span className="text-xs text-amber-400 mr-0.5">$</span>{seatCost}<span className="text-xs text-amber-400 uppercase tracking-widest ml-0.5">/mo</span></span>
                 </div>
                 <input
-                  id="input-seat-cost"
                   type="range"
                   min="5"
                   max="120"
                   value={seatCost}
                   onChange={(e) => setSeatCost(Number(e.target.value))}
-                  className="w-full accent-rose-500 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
                   <span>$5</span>
                   <span>$120</span>
                 </div>
               </div>
 
               {/* Slider 4: Team size */}
-              <div id="slider-team-size" className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-slate-700">Active Team Seats Count</span>
-                  <span className="text-lg font-sans italic font-bold text-rose-500">{teamSize} seats</span>
+              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-sm font-bold text-slate-900">Active Team Seats Count</span>
+                  <span className="text-2xl font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-xl">{teamSize} <span className="text-xs text-emerald-400 uppercase tracking-widest ml-0.5">seats</span></span>
                 </div>
                 <input
-                  id="input-team-size"
                   type="range"
                   min="1"
                   max="100"
                   value={teamSize}
                   onChange={(e) => setTeamSize(Number(e.target.value))}
-                  className="w-full accent-rose-500 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  className="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
                   <span>1 SEAT</span>
                   <span>100 SEATS</span>
                 </div>
@@ -188,77 +182,80 @@ export default function CalculatorPage() {
             </div>
 
             {/* Right Column: Outcomes in dark theme layout (5 / 12 width) */}
-            <div id="calculator-receipt" className="lg:col-span-5 bg-slate-900 text-white p-6 md:p-8 rounded-2xl border border-slate-800 flex flex-col justify-between gap-6 shadow-md">
-              
-              {/* Output Header with dynamic verdict */}
-              <div>
-                <span className="text-[10px] uppercase tracking-widest font-mono text-slate-400 block mb-1">
-                  SaaS Evaluation Decision Verdict
-                </span>
+            <div className="lg:col-span-5 relative">
+              <div className="sticky top-28 bg-slate-900 text-white p-8 rounded-[32px] border border-slate-800 shadow-2xl flex flex-col gap-8">
                 
-                <div className={`p-4 rounded-xl border ${verdict.bg} mb-4`}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs uppercase font-mono font-bold tracking-wider">Estimated Outlook:</span>
-                    <span className={`text-[10px] uppercase tracking-widest font-black px-2.5 py-0.5 rounded-full ${verdict.badge}`}>
-                      {verdict.label}
-                    </span>
+                {/* Output Header with dynamic verdict */}
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 block mb-3 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Decision Verdict
+                  </span>
+                  
+                  <div className={`p-5 rounded-2xl border ${verdict.bg}`}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs uppercase font-extrabold tracking-wider">Estimated Outlook:</span>
+                      <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full ${verdict.badge}`}>
+                        {verdict.label}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed">
+                      {verdict.summary}
+                    </p>
                   </div>
-                  <p className="text-xs font-medium leading-relaxed">
-                    {verdict.summary}
-                  </p>
                 </div>
+
+                {/* Key calculated yields and variables */}
+                <div className="space-y-6">
+                  
+                  {/* Monthly cost */}
+                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                    <span className="text-sm text-slate-400 font-medium">Monthly Licensing Cost:</span>
+                    <span className="text-xl font-bold font-mono text-white">${report.monthlyCost}</span>
+                  </div>
+
+                  {/* Value created */}
+                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                    <span className="text-sm text-slate-400 font-medium">Monthly Time Value:</span>
+                    <span className="text-xl font-bold font-mono text-blue-400">${report.monthlyValue}</span>
+                  </div>
+
+                  {/* Net Benefit */}
+                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                    <span className="text-sm text-slate-400 font-medium">Net Monthly Profit:</span>
+                    <span className="text-2xl font-black font-mono text-emerald-400">${report.netBenefit}</span>
+                  </div>
+
+                  {/* ROI % & Payback */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                      <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">ROI Yield</span>
+                      <span className="text-2xl font-black font-mono text-amber-400">{report.roiPercentage}%</span>
+                    </div>
+                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                      <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Break-Even</span>
+                      <span className="text-2xl font-black font-mono text-white">{report.paybackDays} <span className="text-xs text-slate-400">days</span></span>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="text-[10px] text-slate-500 font-medium text-center leading-normal">
+                  *Values are estimated assuming 4.33 weeks per calendar month.
+                </div>
+
               </div>
-
-              {/* Key calculated yields and variables */}
-              <div className="space-y-4">
-                
-                {/* Monthly cost */}
-                <div className="flex justify-between items-end pb-2 border-b border-slate-800">
-                  <span className="text-xs text-slate-400">Monthly Licensing Cost:</span>
-                  <span className="text-sm font-bold font-mono text-white">${report.monthlyCost}</span>
-                </div>
-
-                {/* Value created */}
-                <div className="flex justify-between items-end pb-2 border-b border-slate-800">
-                  <span className="text-xs text-slate-400">Monthly Time Value Recaptured:</span>
-                  <span className="text-sm font-bold font-mono text-blue-400">${report.monthlyValue}</span>
-                </div>
-
-                {/* Net Benefit */}
-                <div className="flex justify-between items-end pb-2 border-b border-slate-800">
-                  <span className="text-xs text-slate-400">Net Monthly Business Profit:</span>
-                  <span className="text-base font-extrabold font-mono text-emerald-400">${report.netBenefit}</span>
-                </div>
-
-                {/* ROI % */}
-                <div className="flex justify-between items-end pb-2 border-b border-slate-800">
-                  <span className="text-xs text-slate-400">Estimated Yield Return (ROI %):</span>
-                  <span className="text-base font-extrabold font-mono text-amber-400">{report.roiPercentage}%</span>
-                </div>
-
-                {/* Payback period */}
-                <div className="flex justify-between items-end pb-1">
-                  <span className="text-xs text-slate-400">Break-Even Velocity Period:</span>
-                  <span className="text-xs font-bold font-mono text-white">~ {report.paybackDays} days</span>
-                </div>
-
-              </div>
-
-              <div className="text-[10px] text-slate-500 font-mono text-center leading-normal pt-2 border-t border-slate-800">
-                *Values are estimated assuming 4.33 weeks per calendar month.
-              </div>
-
             </div>
 
           </div>
 
           {/* Bottom Card calling list with payback indexes */}
-          <section id="payback-index-cta" className="bg-slate-50 border border-slate-205 py-6 px-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">
+          <section id="payback-index-cta" className="bg-white border border-slate-200/80 shadow-sm py-8 px-8 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-6 max-w-4xl mx-auto mb-16">
+            <div className="max-w-xl text-center md:text-left">
+              <h4 className="text-xl font-black text-slate-900 mb-2">
                 Ready to shop by verified turnaround pacing?
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-slate-500 font-medium">
                 Consult our side-by-side matrices filtered by lowest subscription overhead structures and rapid audit verification.
               </p>
             </div>
@@ -266,15 +263,15 @@ export default function CalculatorPage() {
             <Link
               id="calculator-go-reviews-index"
               href="/reviews"
-              className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-805 text-white text-xs font-semibold px-4 py-2.5 rounded-lg whitespace-nowrap"
+              className="inline-flex shrink-0 items-center gap-2 bg-slate-950 hover:bg-rose-600 text-white text-xs font-bold uppercase tracking-widest px-8 py-4 rounded-full transition-all shadow-md hover:shadow-lg hover:scale-105"
             >
-              Browse active reviews
-              <ArrowRight className="h-3.5 w-3.5 text-blue-400" />
+              Browse Reviews
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </section>
 
           {/* Google Adsense compliance placement */}
-          <div className="mt-8">
+          <div className="max-w-4xl mx-auto">
             <AdContainer layoutType="top-banner" slotId="calculator-leaderboard-bottom" />
           </div>
 

@@ -28,57 +28,38 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     await new Promise((r) => setTimeout(r, 800));
 
     try {
-      if (supabaseActive) {
-        // Authenticate over Supabase auth client
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: username, // treats username as email field (or standard input)
-            password: password,
-          });
-
-          if (error) {
-            setErrorMsg(`Supabase Auth Refused: ${error.message}`);
-            setIsAuthenticating(false);
-            return;
-          }
-
-          if (data?.session) {
-            // Save token
-            if (typeof window !== 'undefined') {
-              window.localStorage.setItem('saasrooms-admin-authenticated', 'true');
-              window.localStorage.setItem('saasrooms-admin-provider', 'supabase');
-            }
-            onLoginSuccess();
-            return;
-          }
-        }
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setErrorMsg('Database connection unavailable. Gateway locked.');
+        setIsAuthenticating(false);
+        return;
       }
 
-      // Check Fallback Mode standard verification
-      const fallbackUser = 'admin';
-      const fallbackPass = 'password123';
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
 
-      if (username.trim().toLowerCase() === fallbackUser && password === fallbackPass) {
+      if (error) {
+        setErrorMsg(`Auth Refused: ${error.message}`);
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (data?.session) {
         if (typeof window !== 'undefined') {
           window.localStorage.setItem('saasrooms-admin-authenticated', 'true');
-          window.localStorage.setItem('saasrooms-admin-provider', 'fallback');
+          window.localStorage.setItem('saasrooms-admin-provider', 'supabase');
         }
         onLoginSuccess();
       } else {
-        setErrorMsg('Invalid administrative credentials. Match error code 401.');
+        setErrorMsg('Invalid administrative credentials.');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'System validation panic in authentication thread.');
     } finally {
       setIsAuthenticating(false);
     }
-  };
-
-  const handleApplyPrefill = () => {
-    setUsername('admin');
-    setPassword('password123');
-    setErrorMsg(null);
   };
 
   return (
@@ -111,7 +92,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
           className={`p-3 rounded-xl border flex items-center gap-2.5 text-xs font-semibold ${
             supabaseActive 
               ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
-              : 'bg-amber-50 border-amber-100 text-amber-800'
+              : 'bg-rose-50 border-rose-100 text-rose-800'
           }`}
         >
           {supabaseActive ? (
@@ -124,10 +105,10 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
             </>
           ) : (
             <>
-              <AlertTriangle className="h-4.5 w-4.5 text-amber-600 shrink-0" />
+              <AlertTriangle className="h-4.5 w-4.5 text-rose-600 shrink-0" />
               <div className="flex-grow">
-                <span className="block font-bold">Fallback Gateway Mode</span>
-                <span className="block text-[10px] text-amber-600 leading-tight font-normal">Supabase credentials pending setup. Using secure offline bypass.</span>
+                <span className="block font-bold">Supabase Disconnected</span>
+                <span className="block text-[10px] text-rose-600 leading-tight font-normal">Database credentials missing. Login disabled.</span>
               </div>
             </>
           )}
@@ -138,15 +119,15 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
           
           <div className="space-y-1">
             <label className="block text-xs font-bold text-slate-700 tracking-wide">
-              {supabaseActive ? 'Supabase Account Email:' : 'Username / Operator ID:'}
+              Supabase Account Email:
             </label>
             <input
-              type="text"
+              type="email"
               required
               id="admin-username-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder={supabaseActive ? 'admin@saasrooms.com' : 'e.g. admin'}
+              placeholder="admin@saasrooms.com"
               className="w-full text-sm p-3 border-2 border-slate-200 bg-white rounded-xl focus:border-slate-800 focus:outline-none transition-colors placeholder-slate-400 font-mono"
             />
           </div>
@@ -206,25 +187,6 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
           </button>
         </form>
 
-        {/* Instructive Pre-fill action box when Supabase is not connected to quickstart tests */}
-        {!supabaseActive && (
-          <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-center space-y-2">
-            <p className="text-[11px] text-slate-500 leading-normal">
-              Need a quick demo? Use the following fallback security bypass key:
-            </p>
-            <div className="text-[11px] font-mono text-slate-600 flex justify-center gap-3">
-              <span>User: <strong className="text-slate-800 font-bold">admin</strong></span>
-              <span>Pass: <strong className="text-slate-800 font-bold">password123</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={handleApplyPrefill}
-              className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 hover:text-blue-800 hover:underline transition-all block mx-auto py-1"
-            >
-              Apply Quick Sandbox Credentials
-            </button>
-          </div>
-        )}
 
         {/* Bottom instructions to config settings */}
         <p className="text-[10px] text-slate-400 font-mono text-center">
