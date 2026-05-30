@@ -58,21 +58,20 @@ export function Header() {
         {/* Middle Section: Famous Airbnb Search Pill */}
         <div className="hidden md:block">
           <div 
-            onClick={handleSearchPillClick}
-            className="flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-full py-2 px-3 pl-5 shadow-sm hover:shadow-md transition-all cursor-pointer select-none"
+            className="flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-full py-2 px-3 pl-5 shadow-sm hover:shadow-md transition-all select-none"
           >
-            <span className="text-xs font-bold text-slate-800 pr-4 border-r border-slate-100 hover:text-blue-600 transition-colors">
-              Any SaaS
-            </span>
-            <span className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors">
-              Side-by-Side
-            </span>
-            <span className="text-xs font-medium text-slate-400 pl-4 pr-1 flex items-center gap-3">
+            <Link href="/compare" className="text-xs font-bold text-slate-800 pr-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Compare
+            </Link>
+            <Link href="/reviews" className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Review
+            </Link>
+            <button type="button" onClick={handleSearchPillClick} className="text-xs font-medium text-slate-400 pl-4 pr-1 flex items-center gap-3 cursor-pointer outline-none hover:text-slate-600 bg-transparent border-none">
               Find comparisons
               <span className="h-8 w-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs hover:scale-105 transition-transform">
                 <Search className="h-4 w-4 stroke-[3]" />
               </span>
-            </span>
+            </button>
           </div>
         </div>
 

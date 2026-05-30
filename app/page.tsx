@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
+import { Hero3DScene } from '@/components/Hero3DScene';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ReviewCardSkeleton } from '@/components/Skeletons';
 import { SectionHeading } from '@/components/SectionHeading';
@@ -29,7 +30,8 @@ import {
   Zap,
   Check,
   TrendingUp,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ChevronDown
 } from 'lucide-react';
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -51,6 +53,7 @@ export default function Page() {
   const [activeReviews, setActiveReviews] = useState<Review[]>([]);
   const [activeTools, setActiveTools] = useState<Tool[]>([]);
   const [selectedQuickReview, setSelectedQuickReview] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
     import('@/lib/clientDb').then((db) => {
@@ -123,12 +126,20 @@ export default function Page() {
               {/* Left Side: Copywriting & High-Converting Search Console */}
               <div className="lg:col-span-7 space-y-8">
                 
-                {/* Premium tag */}
-                <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-100/60 text-rose-600 px-4 py-1.5 rounded-full select-none">
-                  <Sparkles className="h-3.5 w-3.5 text-rose-500 animate-spin" />
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider">
-                    SaaS comparison remade &bull; Complete Integrity
-                  </span>
+                {/* Premium & Free tags */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-100/60 text-rose-600 px-4 py-1.5 rounded-full select-none">
+                    <Sparkles className="h-3.5 w-3.5 text-rose-500 animate-spin" />
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                      SaaS comparison remade &bull; Complete Integrity
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100/60 text-emerald-600 px-4 py-1.5 rounded-full select-none">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider">
+                      100% Free of Charge
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -152,23 +163,69 @@ export default function Page() {
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                       
                       {/* Dropdown to select matrix comparison */}
-                      <div className="md:col-span-8">
-                        <label htmlFor="quick-matrix-sel" className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                      <div className="md:col-span-8 relative">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
                           Select Audited Matrix
                         </label>
-                        <select
-                          id="quick-matrix-sel"
-                          value={selectedQuickReview}
-                          onChange={(e) => setSelectedQuickReview(e.target.value)}
-                          className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl py-3 px-4 text-slate-800 transition-colors focus:ring-2 focus:ring-rose-500/20 focus:outline-none appearance-none cursor-pointer"
-                        >
-                          <option value="">Choose an active study...</option>
-                          {activeReviews.map((r) => (
-                            <option key={r.slug} value={r.slug}>
-                              {r.title}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="w-full text-left flex items-center justify-between text-xs font-semibold bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-2xl py-3 px-4 text-slate-800 transition-colors focus:ring-2 focus:ring-rose-500/20 focus:outline-none cursor-pointer"
+                          >
+                            <span className="truncate">
+                              {selectedQuickReview 
+                                ? activeReviews.find(r => r.slug === selectedQuickReview)?.title 
+                                : "Choose an active study..."}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          
+                          {isDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                              <ul className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-64 overflow-y-auto py-2">
+                                <li
+                                  onClick={() => { setSelectedQuickReview(''); setIsDropdownOpen(false); }}
+                                  className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-500"
+                                >
+                                  Choose an active study...
+                                </li>
+                                {activeReviews.map((r) => {
+                                  const toolA = activeTools.find(t => t.slug === r.toolA);
+                                  const toolB = activeTools.find(t => t.slug === r.toolB);
+                                  return (
+                                    <li
+                                      key={r.slug}
+                                      onClick={() => { setSelectedQuickReview(r.slug); setIsDropdownOpen(false); }}
+                                      className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors border-t border-slate-50 first:border-0"
+                                    >
+                                      <div className="flex items-center -space-x-2 shrink-0">
+                                        {toolA?.iconUrl ? (
+                                          <img src={toolA.iconUrl} alt={toolA.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
+                                            {toolA?.name?.substring(0, 2).toUpperCase() || 'A'}
+                                          </div>
+                                        )}
+                                        {toolB?.iconUrl ? (
+                                          <img src={toolB.iconUrl} alt={toolB.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
+                                            {toolB?.name?.substring(0, 2).toUpperCase() || 'B'}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className="text-xs font-semibold text-slate-800 line-clamp-1">
+                                        {r.title}
+                                      </span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </>
+                          )}
+                        </div>
                       </div>
 
                       {/* Direct query trigger */}
@@ -291,79 +348,16 @@ export default function Page() {
 
               </div>
 
-              {/* Right Side: STUNNING, UNIQUE NANO BANANA ACCELERATOR INTEGRATED SVG ARTWORK */}
-              <div className="lg:col-span-5 flex justify-center items-center">
-                <div className="relative w-full max-w-[420px] aspect-square rounded-[40px] bg-rose-50/10 border border-slate-150 p-8 shadow-xs flex items-center justify-center group overflow-hidden">
-                  
-                  {/* Subtle vector grid */}
-                  <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-60" />
-                  
-                  {/* Floating particle animations */}
-                  <div className="absolute top-10 left-10 h-3 w-3 bg-rose-400 rounded-full animate-bounce" />
-                  <div className="absolute bottom-16 right-12 h-2.5 w-2.5 bg-yellow-400 rounded-full animate-ping" />
-                  
-                  {/* Highly refined responsive dynamic yellow curved geometric vector (Our beautiful custom Nano Banana Concept graphic) */}
-                  <svg className="relative w-full h-full text-amber-400 filter drop-shadow-xl select-none" viewBox="0 0 400 400" fill="none">
-                    
-                    {/* Background glowing rings */}
-                    <circle cx="200" cy="200" r="140" stroke="#f3f4f6" strokeWidth="2" strokeDasharray="5 5" />
-                    <circle cx="200" cy="200" r="100" stroke="#fee2e2" strokeWidth="1.5" />
-                    
-                    {/* The Nano Banana Curve Core */}
-                    <path 
-                      d="M 120,290 C 130,240 220,110 300,105 C 290,135 220,225 150,305 C 135,305 125,300 120,290 Z" 
-                      fill="url(#bananaGradient)" 
-                      className="transition-transform duration-500 hover:scale-105"
-                    />
-                    
-                    {/* Shadow underneath core for 3D realism */}
-                    <path 
-                      d="M 120,300 C 140,295 190,290 230,305" 
-                      stroke="#fbbf24" 
-                      strokeWidth="6" 
-                      strokeLinecap="round" 
-                      opacity="0.2" 
-                    />
-                    
-                    {/* Futuristic circuitry nodes connecting outward from the nano banana */}
-                    <path d="M 270,115 L 340,95" stroke="#f43f5e" strokeWidth="2" strokeDasharray="3 3" />
-                    <path d="M 170,245 L 90,200" stroke="#f43f5e" strokeWidth="2" strokeDasharray="3 3" />
-                    <line x1="230" y1="165" x2="280" y2="230" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4 2" />
-                    
-                    {/* Connected bubble items representing Jira, Asana, Hubspot */}
-                    <circle cx="340" cy="95" r="15" fill="#0052cc" />
-                    <text x="340" y="99" fill="white" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">JI</text>
-                    
-                    <circle cx="90" cy="200" r="15" fill="#f06a6c" />
-                    <text x="90" y="204" fill="white" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">AS</text>
-
-                    <circle cx="280" cy="230" r="15" fill="#ff7a59" />
-                    <text x="280" y="234" fill="white" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">HS</text>
-
-                    {/* Glowing Core center indicator representing calibration telemetry */}
-                    <circle cx="204" cy="180" r="7" fill="#fb7185" className="animate-ping" />
-                    <circle cx="204" cy="180" r="4" fill="#e11d48" />
-
-                    {/* Vector Gradients */}
-                    <defs>
-                      <linearGradient id="bananaGradient" x1="120" y1="290" x2="300" y2="105" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stopColor="#f59e0b" />
-                        <stop offset="50%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#fef08a" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-
-                  {/* Absolute badged telemetry overlay representing professional design craftsmanship */}
-                  <div className="absolute bottom-6 left-6 bg-white border border-slate-205 rounded-2xl p-3 shadow-md flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-rose-500" />
-                    <div>
-                      <div className="text-[9px] font-black uppercase text-slate-400">BENCHMARK LAB</div>
-                      <div className="text-[11px] font-bold text-slate-900 leading-none">NANO CALIBRATED</div>
-                    </div>
+              {/* Right Side: Interactive 3D Presentation Canvas */}
+              <div className="lg:col-span-5 w-full h-full min-h-[500px] flex items-center justify-center rounded-[40px] overflow-hidden bg-rose-50/5 border border-slate-100/50 shadow-sm relative">
+                <div className="absolute top-6 left-6 z-20 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl p-3 shadow-sm flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-rose-500" />
+                  <div>
+                    <div className="text-[9px] font-black uppercase text-slate-400">INTERACTIVE ELEMENT</div>
+                    <div className="text-[11px] font-bold text-slate-900 leading-none">DRAG TO ROTATE</div>
                   </div>
-
                 </div>
+                <Hero3DScene />
               </div>
 
             </div>
@@ -384,6 +378,37 @@ export default function Page() {
               </div>
             </div>
 
+          </div>
+        </section>
+
+        {/* SPECIALITIES SECTION */}
+        <section className="py-16 bg-white border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-12 space-y-4">
+              <h2 className="text-3xl font-black tracking-tight text-slate-900">
+                Our Platform Specialities
+              </h2>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Created by a highly professional team of auditors, our platform provides powerful features designed to help you analyze and discover the perfect tools for your stack.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { title: 'Compare Tools', desc: 'Side-by-side matrices of top SaaS products to evaluate performance and pricing.', href: '/compare', icon: <SlidersHorizontal className="h-6 w-6 text-rose-500" /> },
+                { title: 'Detailed Reviews', desc: 'In-depth analysis from our expert auditing team, ensuring GAAP compliance.', href: '/reviews', icon: <ClipboardList className="h-6 w-6 text-emerald-500" /> },
+                { title: 'ROI Calculator', desc: 'Compute costs and find savings with real-time scaling scenarios.', href: '/calculator', icon: <Coins className="h-6 w-6 text-blue-500" /> },
+                { title: 'Auditor Blog', desc: 'Insights and actionable trends from the SaaS industry professionals.', href: '/blog', icon: <Megaphone className="h-6 w-6 text-amber-500" /> },
+              ].map((spec) => (
+                <Link key={spec.title} href={spec.href} className="group block bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:border-rose-200 transition-all cursor-pointer">
+                  <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-rose-50 transition-all shadow-sm">
+                    {spec.icon}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">{spec.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{spec.desc}</p>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
