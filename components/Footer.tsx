@@ -36,7 +36,7 @@ export function Footer() {
   return (
     <footer id="footer-comp" className="bg-white border-t border-slate-100 py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div id="footer-desktop-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div id="footer-desktop-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Col */}
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
@@ -153,7 +153,7 @@ export function Footer() {
                       placeholder="Name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
+                      className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
                       required
                     />
                   </div>
@@ -166,7 +166,7 @@ export function Footer() {
                       value={formData.company}
                       onChange={handleInputChange}
                       placeholder="Company"
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
+                      className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
                       required
                     />
                   </div>
@@ -195,7 +195,7 @@ export function Footer() {
                     value={formData.message}
                     onChange={handleInputChange}
                     placeholder="Briefly describe your software niche..."
-                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white resize-none"
+                    className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white resize-none"
                   />
                 </div>
 
@@ -208,7 +208,7 @@ export function Footer() {
                 <button
                   id="submit-form-button"
                   type="submit"
-                  className="w-full flex items-center justify-center bg-slate-900 hover:bg-slate-800 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-2.5 rounded-sm transition-colors focus:ring-1 focus:ring-slate-950"
+                  className="w-full flex items-center justify-center bg-slate-900 hover:bg-slate-800 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-3.5 min-h-[44px] rounded-sm transition-colors focus:ring-1 focus:ring-slate-950"
                 >
                   REQUEST BOARD AUDIT
                 </button>

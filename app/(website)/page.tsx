@@ -460,7 +460,7 @@ export default function Page() {
 
             {/* AIRBNB-STYLE CATEGORIES HORIZONTAL NAVIGATION STRIP */}
             <div className="sticky top-20 bg-[#FCFCFA] z-20 py-4 border-b border-slate-200 mb-8 overflow-hidden select-none">
-              <div className="flex items-center justify-between gap-6 overflow-x-auto scrollbar-none pb-2">
+              <div className="flex items-center justify-between gap-6 overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="flex items-center gap-8 md:gap-10">
                   {filterCategories.map((name) => {
                     const isSelected = selectedCategory === name;
@@ -527,7 +527,7 @@ export default function Page() {
                   placeholder="Seach active evaluations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-slate-800 transition-all placeholder:text-slate-400"
+                  className="w-full text-xs font-semibold pl-10 pr-4 py-3 min-h-[44px] rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-slate-800 transition-all placeholder:text-slate-400"
                 />
                 <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-slate-400" />

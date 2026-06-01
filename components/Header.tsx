@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navLinks = [
     { label: 'Calculator', href: '/calculator', id: 'mobile-link-calculator' },
@@ -27,6 +28,8 @@ export function Header() {
       const gridElem = document.getElementById('directory-grid');
       if (gridElem) {
         gridElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        router.push('/compare');
       }
     }
   };
@@ -94,7 +97,7 @@ export function Header() {
               id="header-profile-menu-pill"
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex items-center gap-3 border border-slate-200 hover:shadow-md py-1.5 pl-3 pr-1.5 rounded-full bg-white transition-all cursor-pointer h-10 select-none touch-manipulation"
+              className="flex items-center gap-3 border border-slate-200 hover:shadow-md py-1.5 pl-3 pr-1.5 rounded-full bg-white transition-all cursor-pointer min-h-[44px] select-none touch-manipulation"
             >
               <Menu className="h-4 w-4 text-slate-600" />
               {/* Decorative aesthetic icon */}
@@ -131,11 +134,25 @@ export function Header() {
             className="absolute top-20 right-4 sm:right-8 w-[280px] bg-white border border-slate-100 rounded-3xl shadow-xl z-50 flex flex-col p-4 gap-2 mr-3"
           >
               <div className="flex flex-col py-1 border-b border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleSearchPillClick();
+                  }}
+                  className="px-4 min-h-[44px] flex items-center gap-2 text-xs font-bold text-slate-800 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                >
+                  <Search className="h-4 w-4 text-slate-400" />
+                  Search & Compare
+                </button>
+              </div>
+
+              <div className="flex flex-col py-1 border-b border-slate-100">
                 <Link
                   href="/newsletter"
                   id="mobile-link-join-dispatch"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                  className="px-4 min-h-[44px] flex items-center text-xs font-bold text-rose-500 hover:bg-slate-50 rounded-xl transition-colors text-left"
                 >
                   Join Weekly Dispatch
                 </Link>
@@ -143,7 +160,7 @@ export function Header() {
                   href="/about"
                   id="mobile-link-manifesto"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                  className="px-4 min-h-[44px] flex items-center text-xs font-bold text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left"
                 >
                   Auditing Manifesto
                 </Link>
@@ -158,7 +175,7 @@ export function Header() {
                       id={link.id}
                       href={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left ${
+                      className={`px-4 min-h-[44px] flex items-center text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left ${
                         isActive ? 'text-slate-950 font-bold bg-slate-50' : ''
                       }`}
                     >
