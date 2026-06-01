@@ -2,19 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, Search, Globe, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navLinks = [
-    { label: 'Reviews', href: '/reviews', id: 'mobile-link-reviews' },
-    { label: 'Compare', href: '/compare', id: 'mobile-link-compare' },
     { label: 'Calculator', href: '/calculator', id: 'mobile-link-calculator' },
-    { label: 'Blog', href: '/blog', id: 'mobile-link-blog' },
     { label: 'About', href: '/about', id: 'mobile-link-about' },
   ];
 
@@ -30,6 +28,8 @@ export function Header() {
       const gridElem = document.getElementById('directory-grid');
       if (gridElem) {
         gridElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        router.push('/compare');
       }
     }
   };
@@ -49,7 +49,7 @@ export function Header() {
             className="flex items-center gap-1 focus:outline-none"
           >
             <span className="font-sans font-black text-xl md:text-2xl tracking-tight text-rose-500">
-              saas<span className="text-slate-900 font-bold">rooms</span>
+              SaaS<span className="text-slate-900 font-bold">Rooms</span>
             </span>
             <span className="h-2 w-2 rounded-full bg-rose-500 block animate-pulse mt-1" />
           </Link>
@@ -58,21 +58,23 @@ export function Header() {
         {/* Middle Section: Famous Airbnb Search Pill */}
         <div className="hidden md:block">
           <div 
-            onClick={handleSearchPillClick}
-            className="flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-full py-2 px-3 pl-5 shadow-sm hover:shadow-md transition-all cursor-pointer select-none"
+            className="flex items-center bg-white border border-slate-200 hover:border-slate-300 rounded-full py-2 px-3 pl-5 shadow-sm hover:shadow-md transition-all select-none"
           >
-            <span className="text-xs font-bold text-slate-800 pr-4 border-r border-slate-100 hover:text-blue-600 transition-colors">
-              Any SaaS
-            </span>
-            <span className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors">
-              Side-by-Side
-            </span>
-            <span className="text-xs font-medium text-slate-400 pl-4 pr-1 flex items-center gap-3">
+            <Link href="/compare" className="text-xs font-bold text-slate-800 pr-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Compare
+            </Link>
+            <Link href="/reviews" className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Review
+            </Link>
+            <Link href="/blog" className="text-xs font-bold text-slate-800 px-4 border-r border-slate-100 hover:text-blue-600 transition-colors cursor-pointer">
+              Blog
+            </Link>
+            <button type="button" onClick={handleSearchPillClick} className="text-xs font-medium text-slate-400 pl-4 pr-1 flex items-center gap-3 cursor-pointer outline-none hover:text-slate-600 bg-transparent border-none">
               Find comparisons
               <span className="h-8 w-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-xs hover:scale-105 transition-transform">
                 <Search className="h-4 w-4 stroke-[3]" />
               </span>
-            </span>
+            </button>
           </div>
         </div>
 
@@ -88,14 +90,6 @@ export function Header() {
             Become an Auditor
           </Link>
 
-          {/* Globe symbol */}
-          <button 
-            type="button"
-            className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-            aria-label="Language selection"
-          >
-            <Globe className="h-4 w-4" />
-          </button>
 
           {/* Airbnb profile pill button */}
           <div className="flex items-center gap-2">
@@ -103,12 +97,12 @@ export function Header() {
               id="header-profile-menu-pill"
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex items-center gap-3 border border-slate-200 hover:shadow-md py-1.5 pl-3 pr-1.5 rounded-full bg-white transition-all cursor-pointer h-10 select-none touch-manipulation"
+              className="flex items-center gap-3 border border-slate-200 hover:shadow-md py-1.5 pl-3 pr-1.5 rounded-full bg-white transition-all cursor-pointer min-h-[44px] select-none touch-manipulation"
             >
               <Menu className="h-4 w-4 text-slate-600" />
-              {/* Initials avatar derived from email */}
-              <div className="h-7 w-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold font-mono">
-                MI
+              {/* Decorative aesthetic icon */}
+              <div className="h-7 w-7 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5" />
               </div>
             </button>
           </div>
@@ -119,31 +113,46 @@ export function Header() {
       {/* Mobile Drawer Navigation and Shortcut Panel */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <>
-            {/* Backdrop Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.15 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 top-20 bg-slate-900 z-40"
-            />
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.15 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 top-20 bg-slate-900 z-40"
+          />
+        )}
 
-            {/* Mobile/Tablet dropdown sheet */}
-            <motion.div 
-              id="mobile-navigation-drawer"
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute top-20 right-4 sm:right-8 w-[280px] bg-white border border-slate-100 rounded-3xl shadow-xl z-50 flex flex-col p-4 gap-2 mr-3"
-            >
+        {isMobileMenuOpen && (
+          <motion.div 
+            key="drawer"
+            id="mobile-navigation-drawer"
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute top-20 right-4 sm:right-8 w-[280px] bg-white border border-slate-100 rounded-3xl shadow-xl z-50 flex flex-col p-4 gap-2 mr-3"
+          >
+              <div className="flex flex-col py-1 border-b border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleSearchPillClick();
+                  }}
+                  className="px-4 min-h-[44px] flex items-center gap-2 text-xs font-bold text-slate-800 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                >
+                  <Search className="h-4 w-4 text-slate-400" />
+                  Search & Compare
+                </button>
+              </div>
+
               <div className="flex flex-col py-1 border-b border-slate-100">
                 <Link
                   href="/newsletter"
                   id="mobile-link-join-dispatch"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                  className="px-4 min-h-[44px] flex items-center text-xs font-bold text-rose-500 hover:bg-slate-50 rounded-xl transition-colors text-left"
                 >
                   Join Weekly Dispatch
                 </Link>
@@ -151,7 +160,7 @@ export function Header() {
                   href="/about"
                   id="mobile-link-manifesto"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-4 py-2.5 text-xs font-bold text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                  className="px-4 min-h-[44px] flex items-center text-xs font-bold text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left"
                 >
                   Auditing Manifesto
                 </Link>
@@ -166,7 +175,7 @@ export function Header() {
                       id={link.id}
                       href={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left ${
+                      className={`px-4 min-h-[44px] flex items-center text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-xl transition-colors text-left ${
                         isActive ? 'text-slate-950 font-bold bg-slate-50' : ''
                       }`}
                     >
@@ -180,7 +189,6 @@ export function Header() {
                 SAASROOMS runs an independent software laboratory using certified auditing procedures. No paid referral loops.
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </header>

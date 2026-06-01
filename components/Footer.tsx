@@ -34,20 +34,21 @@ export function Footer() {
   };
 
   return (
-    <footer id="footer-comp" className="bg-slate-50 border-t border-slate-200 py-12 md:py-16">
+    <footer id="footer-comp" className="bg-white border-t border-slate-100 py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div id="footer-desktop-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div id="footer-desktop-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand Col */}
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-[10px] font-mono tracking-widest text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-xs font-semibold">
-                  AUDITED //
+              <Link 
+                href="/" 
+                className="flex items-center gap-1 focus:outline-none mb-6"
+              >
+                <span className="font-sans font-black text-2xl tracking-tight text-rose-500">
+                  SaaS<span className="text-slate-900 font-bold">Rooms</span>
                 </span>
-                <span className="font-sans font-bold text-base tracking-tight text-slate-900 uppercase">
-                  Saas<span className="font-light text-slate-500">Rooms</span>
-                </span>
-              </div>
+                <span className="h-2 w-2 rounded-full bg-rose-500 block animate-pulse mt-1" />
+              </Link>
               <p className="text-xs text-slate-500 leading-relaxed max-w-sm mb-4">
                 SaaSRooms is the leading B2B catalog dashboard and performance index delivering independent SaaS evaluations and structural side-by-side matrices. Designed for maximum load efficiency and clear choice frameworks.
               </p>
@@ -94,17 +95,17 @@ export function Footer() {
               </h3>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/privacy" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/privacy" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/terms" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/disclaimers" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/disclaimers" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Advertiser Disclosure
                   </Link>
                 </li>
@@ -152,7 +153,7 @@ export function Footer() {
                       placeholder="Name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
+                      className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
                       required
                     />
                   </div>
@@ -165,7 +166,7 @@ export function Footer() {
                       value={formData.company}
                       onChange={handleInputChange}
                       placeholder="Company"
-                      className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
+                      className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white"
                       required
                     />
                   </div>
@@ -194,7 +195,7 @@ export function Footer() {
                     value={formData.message}
                     onChange={handleInputChange}
                     placeholder="Briefly describe your software niche..."
-                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white resize-none"
+                    className="w-full text-xs px-3 py-3 min-h-[44px] bg-slate-50 border border-slate-200 rounded-xs text-slate-850 placeholder-slate-400 font-mono focus:outline-none focus:ring-1 focus:ring-slate-950 focus:bg-white resize-none"
                   />
                 </div>
 
@@ -207,7 +208,7 @@ export function Footer() {
                 <button
                   id="submit-form-button"
                   type="submit"
-                  className="w-full flex items-center justify-center bg-slate-955 hover:bg-slate-900 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-2.5 rounded-sm transition-colors focus:ring-1 focus:ring-slate-950"
+                  className="w-full flex items-center justify-center bg-slate-900 hover:bg-slate-800 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-3.5 min-h-[44px] rounded-sm transition-colors focus:ring-1 focus:ring-slate-950"
                 >
                   REQUEST BOARD AUDIT
                 </button>
