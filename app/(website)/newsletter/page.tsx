@@ -68,7 +68,7 @@ export default function NewsletterPage() {
           </nav>
 
           <SectionHeading 
-            title="The Insider Dispatch & SaaS Matrix Resource Library" 
+            title="The Insider Dispatch & SaaSPebble Resource Library" 
             eyebrow="Subscriber Loop" 
             emphasized="Dispatch" 
           />

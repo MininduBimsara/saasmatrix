@@ -53,6 +53,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Apply to all routes except Next.js internals and static assets
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  /*
+   * Limit routing execution rules to intercept structural pages exclusively.
+   * Do not run middle scripts over static media paths, stylesheet links, or system maps.
+   */
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|ads.txt|robots.txt|.*\\.(?:svg|png|jpg|jpeg|webp|avif)$).*)",
+  ],
 };

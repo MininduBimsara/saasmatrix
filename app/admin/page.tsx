@@ -388,7 +388,7 @@ export default function AdminPage() {
       if (!active) return;
 
       channel = supabase
-        .channel("realtime_saasrooms_changes")
+        .channel("realtime_saaspebble_changes")
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "saas_tools" },
@@ -1274,7 +1274,7 @@ export default function AdminPage() {
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute(
       "download",
-      "saasrooms_complete_database_backup.json",
+      "saaspebble_complete_database_backup.json",
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
@@ -1395,7 +1395,7 @@ export default function AdminPage() {
                 Administrative Command Panel
               </span>
               <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight leading-none">
-                SaaSRooms Workspace
+                SaaSPebble Workspace
               </h1>
               <p className="text-xs text-slate-500 mt-1.5 max-w-xl">
                 Add reviews, create tools, draft markdown blog dispatches, and
@@ -3920,7 +3920,7 @@ export default function AdminPage() {
                         Supabase Sync Architecture
                       </h3>
                       <p className="text-slate-600 leading-normal">
-                        SaasMatrix utilizes local-first client database
+                        SaaSPebble utilizes local-first client database
                         optimizations (localStorage overlays) to support static
                         build exports (CLS = 0). This Sync Center serves as your
                         content gateway: publish articles and reviews locally in

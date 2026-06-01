@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!review) {
     return {
-      title: 'Expert Software Comparison | SaasMatrix Review',
+      title: 'Expert Software Comparison | SaaSPebble Review',
       description: 'Dynamic comparison matrix matching leading SaaS products, feature lists, pricing matrices, and conversion-optimized scorecards.',
     };
   }
@@ -44,8 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       type: 'article',
-      url: `https://saasmatrix.hub/reviews/${slug}`,
-      siteName: 'SaasMatrix',
+      url: `https://saaspebble.co/reviews/${slug}`,
+      siteName: 'SaaSPebble',
     },
     twitter: {
       card: 'summary_large_image',

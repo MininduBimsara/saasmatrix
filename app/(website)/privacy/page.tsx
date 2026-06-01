@@ -6,7 +6,7 @@ import { Footer } from '@/components/Footer';
 import { ShieldAlert, Fingerprint, RefreshCw, FileText } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | SaaSMatrix',
+  title: 'Privacy Policy | SaaSPebble',
   description: 'Detailed details on Google AdSense third-party cookie tags, GDPR rights, CCPA opt-outs, and database logging compliance matrices.',
 };
 
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
                 2. Third-Party Publisher Partners & Network Advertising Cookies
               </h2>
               <p>
-                We display advertisements managed by high-trust publisher networks, including Google AdSense. Google, as a primary vendor, utilizes cookies to deliver targeted recommendations to users. The use of the DART cookie enables it and its partners to serve ads based on visits to SaasMatrix and other sites on the Internet.
+                Our platform leverages third-party programmatic networks (specifically Google AdSense) that deploy web cookies, system identifiers, and edge telemetry to display dynamic user-behavior targeted promotions. The use of these cookies enables our partners to serve ads based on visits to SaaSPebble and other sites on the Internet.
               </p>
               <p>
                 Users can review their advertising permissions or completely opt-out of personalized cookie delivery strategies by visiting the{' '}
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
                 <li>Revoke cookie caching privileges at any point in time.</li>
               </ul>
               <p>
-                To trigger an automated CCPA Do-Not-Sell query or GDPR delete script, please address your legal team coordinates directly to our compliance officer at <span className="font-mono bg-slate-50 border border-slate-150 rounded px-1.5 p-0.5">compliance@saasmatrix.co</span>.
+                To trigger an automated CCPA Do-Not-Sell query or GDPR delete script, please address your legal team coordinates directly to our compliance officer at <span className="font-mono bg-slate-50 border border-slate-150 rounded px-1.5 p-0.5">compliance@saaspebble.co</span>.
               </p>
             </div>
 

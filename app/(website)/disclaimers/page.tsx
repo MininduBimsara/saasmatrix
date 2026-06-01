@@ -6,8 +6,8 @@ import { Footer } from '@/components/Footer';
 import { AlertCircle, Landmark, ShieldCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Advertiser Disclosure & FTC Compliance | SaaSMatrix',
-  description: 'How SaaSMatrix guarantees editorial transparency, our funding model, and AdSense and affiliate compliance matrices.',
+  title: 'Advertiser Disclosure & FTC Compliance | SaaSPebble',
+  description: 'How SaaSPebble guarantees editorial transparency, our funding model, and AdSense and affiliate compliance matrices.',
 };
 
 export default function DisclaimersPage() {
@@ -34,7 +34,7 @@ export default function DisclaimersPage() {
               Advertiser & Affiliate Disclosure
             </h1>
             <p className="text-sm md:text-base leading-relaxed text-slate-650 mt-3">
-              Total publication transparency is our highest-yielding metric. Learn how SaasMatrix finances its sandbox VM diagnostic review loops.
+              Total publication transparency is our highest-yielding metric. Learn how SaaSPebble finances its sandbox VM diagnostic review loops.
             </p>
           </header>
 
@@ -56,7 +56,7 @@ export default function DisclaimersPage() {
                 What is an Affiliate / Partner Link?
               </h2>
               <p>
-                When reading comparisons or viewing our high-density indexes, you may select checkout or demo buttons. Some of these outbound redirects are embedded with referral track tags. If you click on one of these partner links and subsequently purchase a subscription tier within a specified cookie dwell timeframe, SaaSMatrix receives a minor licensing referral fee from the vendor.
+                When reading comparisons or viewing our high-density indexes, you may select checkout or demo buttons. Some of these outbound redirects are embedded with referral track tags. If you click on one of these partner links and subsequently purchase a subscription tier within a specified cookie dwell timeframe, SaaSPebble receives a minor licensing referral fee from the vendor.
               </p>
               <p>
                 This referral happens entirely at no extra cost to your organization. Indeed, in many instances, our integration partnerships grant our readers exclusive promo codes that lower standard entry seats pricing by 10% to 20%.
@@ -84,7 +84,7 @@ export default function DisclaimersPage() {
             </div>
 
             <div className="border-t border-slate-100 pt-8 text-[11px] text-slate-400">
-              For corporate legal inquiries or to review our software testing sandboxes directly, please reach out to operations@saasmatrix.co.
+              For corporate legal inquiries or to review our software testing sandboxes directly, please reach out to operations@saaspebble.co.
             </div>
           </section>
         </div>

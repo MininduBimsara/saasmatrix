@@ -71,7 +71,7 @@ export default function ContactPage() {
                   <Mail className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Editorial Proposals</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">vetting@saasrooms.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">vetting@saaspebble.co</p>
                   </div>
                 </div>
 
@@ -79,7 +79,7 @@ export default function ContactPage() {
                   <ShieldCheck className="h-4 w-4 text-emerald-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Compliance & AdSense Networks</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">compliance@saasrooms.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">compliance@saaspebble.co</p>
                   </div>
                 </div>
 
@@ -87,7 +87,7 @@ export default function ContactPage() {
                   <MapPin className="h-4 w-4 text-slate-400 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">HQ Coordinates</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">SaaSRooms Network Inc., 100 Pine Street, San Francisco, CA 94111</p>
+                    <p className="text-xs text-slate-500 mt-0.5">SaaSPebble Network Inc., 100 Pine Street, San Francisco, CA 94111</p>
                   </div>
                 </div>
               </div>

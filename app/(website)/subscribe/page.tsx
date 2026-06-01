@@ -29,7 +29,7 @@ interface FAQItem {
 const FAQ_LIST: FAQItem[] = [
   {
     q: "How does the Founder Pro backlink index boost B2B organic traffic?",
-    a: "SaaSMatrix maintains high authority and clean Core Web Vitals. Placing your software in our matrix structures drives powerful Tier-1 referral and parasite SEO links, allowing you to bypass sandboxing phases and rank for high-intent search queries."
+    a: "SaaSPebble maintains high authority and clean Core Web Vitals. Placing your software in our matrix structures drives powerful Tier-1 referral and parasite SEO links, allowing you to bypass sandboxing phases and rank for high-intent search queries."
   },
   {
     q: "Can I cancel my subscription or update product sheets later?",
@@ -115,7 +115,7 @@ export default function SubscribePage() {
           <header className="text-center max-w-3xl mx-auto mb-12">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-mono tracking-widest bg-amber-50 border border-amber-200 rounded-full text-amber-750 font-black mb-3">
               <Sparkles className="h-3 w-3 text-amber-600 animate-spin-slow" />
-              SaaSRooms Launch Phase: 100% Free Access
+              SaaSPebble Launch Phase: 100% Free Access
             </span>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-950 font-sans leading-tight">
               Acquire Tier-1 High-intent <span className="text-rose-500 font-sans italic">B2B Software</span> Traffic

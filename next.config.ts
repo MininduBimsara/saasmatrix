@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false, // Cloak framework engine specs to strengthen security matrices
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,6 +11,7 @@ const nextConfig: NextConfig = {
   },
   // Allow access to remote image placeholder.
   images: {
+    formats: ["image/avif", "image/webp"], // Force compress raster assets into modern formats
     remotePatterns: [
       {
         protocol: "https",
@@ -17,7 +19,26 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**", // This allows any path under the hostname
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
     ],
+  },
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@heroicons/react",
+      "framer-motion"
+    ],
+  },
+  compiler: {
+    // Automatically strip diagnostic console prints during production compilation loops
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error"] } : false,
   },
   transpilePackages: ["motion"],
   webpack: (config, { dev }) => {

@@ -20,13 +20,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!category) {
     return {
-      title: 'Category Not Found | SaaSMatrix',
+      title: 'Category Not Found | SaaSPebble',
       description: 'The requested category vertical was not found in our B2B directory index.',
     };
   }
 
   return {
-    title: `${category.name} Review Index & Comparison Matrices | SaaSMatrix`,
+    title: `${category.name} Review Index & Comparison Matrices | SaaSPebble`,
     description: `${category.blurb} Detailed comparative analysis, performance benchmarking, and verified pricing lists.`,
     openGraph: {
       title: `${category.name} Comparison Matrices & Ratings`,
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${category.name} Review Index | SaaSMatrix`,
+      title: `${category.name} Review Index | SaaSPebble`,
       description: category.blurb,
     },
   };

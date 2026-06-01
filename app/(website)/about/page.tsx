@@ -84,7 +84,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-base md:text-lg leading-relaxed text-slate-650 max-w-2xl pt-2">
-              B2B procurement is riddled with sponsored top-ten arrays, copy-pasted marketing pitches, and hidden referral kickbacks. SaaSRooms rejects marketing fluff to deliver double-blind sandbox diagnostics.
+              B2B procurement is riddled with sponsored top-ten arrays, copy-pasted marketing pitches, and hidden referral kickbacks. SaaSPebble rejects marketing fluff to deliver double-blind sandbox diagnostics.
             </p>
           </section>
 
@@ -161,7 +161,7 @@ export default function AboutPage() {
               FTC and Legal Compliance statement
             </h4>
             <h3 className="text-sm font-bold text-slate-900 mb-2">
-              How SaasMatrix funds diagnostic operations safely
+              How SaaSPebble funds diagnostic operations safely
             </h3>
             <p className="text-xs leading-relaxed text-slate-505">
               Some links across reviews and compare lists are parsed. If a user click resolves in a vendor purchase tier, a minor licensing commission index is processed. These values never influence comparative metrics. We host Zero sponsored post programs. All pages undergo active supervision by monitoring CPA networks.
@@ -174,7 +174,7 @@ export default function AboutPage() {
             
             <span className="inline-flex justify-center items-center gap-1 text-[10px] uppercase font-mono tracking-widest text-slate-350 bg-slate-800 px-3 py-1 rounded-full border border-slate-700 mb-4">
               <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-              SaaSRooms Evaluator Networks
+              SaaSPebble Evaluator Networks
             </span>
 
             <h3 className="text-xl md:text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-4 max-w-xl mx-auto">

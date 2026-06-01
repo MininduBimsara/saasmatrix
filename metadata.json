@@ -1,5 +1,5 @@
 {
-  "name": "SaaSRooms",
+  "name": "SaaSPebble",
   "description": "Premium Airbnb-style B2B software directories, comparison matrices, and side-by-side product evaluations optimized for search, high conversion rates, and Google AdSense monetization.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

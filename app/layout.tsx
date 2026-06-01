@@ -11,10 +11,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SaaSRooms | Top B2B Software Index & Performance Matrices",
+  title: "SaaSPebble | Top B2B Software Index & Performance Matrices",
   description:
     "Unbiased side-by-side SaaS comparison arrays, ratings, and matrix reports optimized for software buying decisions.",
-  metadataBase: new URL("https://saasrooms.co"),
+  metadataBase: new URL("https://saaspebble.co"),
 };
 
 export const viewport: Viewport = {

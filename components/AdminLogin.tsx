@@ -123,7 +123,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               id="admin-username-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin@saasrooms.com"
+              placeholder="admin@saaspebble.com"
               className="w-full text-sm p-3 border-2 border-slate-200 bg-white rounded-xl focus:border-slate-800 focus:outline-none transition-colors placeholder-slate-400 font-mono"
             />
           </div>
@@ -186,7 +186,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
         {/* Bottom instructions to config settings */}
         <p className="text-[10px] text-slate-400 font-mono text-center">
-          SAASROOMS ADMIN_SECURITY_LAYER v2.0.46 // SECURE SESSION
+          SAASPEBBLE ADMIN_SECURITY_LAYER v2.0.46 // SECURE SESSION
         </p>
       </div>
     </div>
