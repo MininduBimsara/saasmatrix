@@ -45,7 +45,7 @@ export function Footer() {
                 className="flex items-center gap-1 focus:outline-none mb-6"
               >
                 <span className="font-sans font-black text-2xl tracking-tight text-rose-500">
-                  saas<span className="text-slate-900 font-bold">rooms</span>
+                  SaaS<span className="text-slate-900 font-bold">Rooms</span>
                 </span>
                 <span className="h-2 w-2 rounded-full bg-rose-500 block animate-pulse mt-1" />
               </Link>

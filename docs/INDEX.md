@@ -24,6 +24,12 @@ To navigate the functional modules of the application, please consult the respec
 6. **[6. Blog Scheduling Workflow](./6_blog_scheduling_workflow.md)**  
    _Covers the admin bulk queue, 10-hour publishing cadence, visibility rules, and the local-first scheduling model used by the blog system._
 
+7. **[7. AI Content & Traffic Strategy Brief](./7_ai_content_and_traffic_strategy.md)**  
+   _Covers what SaaSMatrix is, what content and tooling it needs, and how to use Google Search, Pinterest, Quora, and other channels to grow traffic._
+
+8. **[8. AI Response Schema for Admin Content](./8_ai_response_schema.md)**  
+   _Defines the exact JSON fields AI should return for tools, reviews, and blog posts so the admin panel can ingest them cleanly._
+
 ---
 
 ### Component-Specific Map

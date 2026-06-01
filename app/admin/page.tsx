@@ -20,7 +20,7 @@ import {
   Flame,
   CheckCircle2,
   Layers2,
-  Lock,
+  LogOut,
   CloudLightning,
   CloudUpload,
   CloudDownload,
@@ -1228,10 +1228,10 @@ export default function AdminPage() {
                 id="btn-admin-sign-out"
                 onClick={handleSignOut}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-4 py-2 rounded-lg hover:bg-rose-100 transition-all cursor-pointer shadow-xs"
-                title="Lock administrative console and leave route"
+                title="Log out of the administrative console"
               >
-                <Lock className="h-3.5 w-3.5 text-rose-650" />
-                <span>Lock Portal</span>
+                <LogOut className="h-3.5 w-3.5 text-rose-650" />
+                <span>Logout</span>
               </button>
             </div>
           </div>
