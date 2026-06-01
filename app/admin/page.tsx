@@ -62,7 +62,97 @@ import {
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 import { logAdminAction } from "@/lib/auditLog";
 
+type ToolFormState = Omit<
+  Tool,
+  "category" | "keyFeatures" | "limitations" | "publicationDate"
+> & {
+  category: CategorySlug;
+  keyFeatures: string;
+  limitations: string;
+  publicationDate: string;
+  iconUrl?: string;
+};
+
+const getDefaultLocalDateTime = () => {
+  const now = new Date();
+  const offsetMinutes = now.getTimezoneOffset();
+  return new Date(now.getTime() - offsetMinutes * 60_000)
+    .toISOString()
+    .slice(0, 16);
+};
+
+const multilineToItems = (value: string): string[] =>
+  value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const itemsToMultiline = (value?: string[]): string => (value || []).join("\n");
+
+const toLocalDateTimeValue = (value?: string): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const offsetMinutes = date.getTimezoneOffset();
+  return new Date(date.getTime() - offsetMinutes * 60_000)
+    .toISOString()
+    .slice(0, 16);
+};
+
+const formStateToTool = (tool: ToolFormState): Tool => {
+  const publicationDate = tool.publicationDate.trim();
+  const parsedPublicationDate = publicationDate
+    ? new Date(publicationDate)
+    : null;
+
+  return {
+    slug: tool.slug.trim(),
+    name: tool.name.trim(),
+    startingPrice: tool.startingPrice.trim() || `$${tool.numericPrice}/mo`,
+    numericPrice: tool.numericPrice,
+    category: tool.category,
+    oneLineOpinion: tool.oneLineOpinion.trim(),
+    parentSlug: tool.parentSlug?.trim() || undefined,
+    tierName: tool.tierName?.trim() || undefined,
+    pricingModel: tool.pricingModel?.trim() || undefined,
+    keyFeatures: multilineToItems(tool.keyFeatures),
+    limitations: multilineToItems(tool.limitations),
+    aiIncluded: tool.aiIncluded,
+    aiCost: tool.aiCost?.trim() || undefined,
+    freeTrial: tool.freeTrial,
+    freeForever: tool.freeForever,
+    iconUrl: tool.iconUrl?.trim() || undefined,
+    publicationDate:
+      parsedPublicationDate && !Number.isNaN(parsedPublicationDate.getTime())
+        ? parsedPublicationDate.toISOString()
+        : undefined,
+  };
+};
+
+const toolToFormState = (tool: Tool): ToolFormState => ({
+  slug: tool.slug,
+  name: tool.name,
+  startingPrice: tool.startingPrice,
+  numericPrice: tool.numericPrice,
+  category: tool.category,
+  oneLineOpinion: tool.oneLineOpinion,
+  parentSlug: tool.parentSlug || "",
+  tierName: tool.tierName || "",
+  pricingModel: tool.pricingModel || "",
+  keyFeatures: itemsToMultiline(tool.keyFeatures),
+  limitations: itemsToMultiline(tool.limitations),
+  aiIncluded: tool.aiIncluded ?? false,
+  aiCost: tool.aiCost || "",
+  freeTrial: tool.freeTrial ?? false,
+  freeForever: tool.freeForever ?? false,
+  iconUrl: tool.iconUrl || "",
+  publicationDate: toLocalDateTimeValue(tool.publicationDate),
+});
+
 export default function AdminPage() {
+  const TOOL_ICON_BUCKET =
+    process.env.NEXT_PUBLIC_SUPABASE_TOOL_ICON_BUCKET || "tool-icons";
+
   // Administrative state checking & lockouts
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [syncLoading, setSyncLoading] = useState<boolean>(false);
@@ -91,16 +181,24 @@ export default function AdminPage() {
   >(null);
 
   // Form states: Tools
-  const [toolForm, setToolForm] = useState<
-    Omit<Tool, "category"> & { category: CategorySlug } & { iconUrl?: string }
-  >({
+  const [toolForm, setToolForm] = useState<ToolFormState>({
     slug: "",
     name: "",
     startingPrice: "$15/mo",
     numericPrice: 15,
     category: "project-management",
     oneLineOpinion: "",
+    parentSlug: "",
+    tierName: "",
+    pricingModel: "",
+    keyFeatures: "",
+    limitations: "",
+    aiIncluded: false,
+    aiCost: "",
+    freeTrial: false,
+    freeForever: false,
     iconUrl: "",
+    publicationDate: getDefaultLocalDateTime(),
   });
 
   // Form states: Reviews
@@ -194,15 +292,6 @@ export default function AdminPage() {
     "blog" | "review" | "tool"
   >("blog");
 
-  // Shared "now (local)" helper for default datetime-local inputs
-  const defaultLocalDateTime = () => {
-    const now = new Date();
-    const offsetMinutes = now.getTimezoneOffset();
-    return new Date(now.getTime() - offsetMinutes * 60_000)
-      .toISOString()
-      .slice(0, 16);
-  };
-
   // Reviews bulk scheduler states
   const [bulkReviewJson, setBulkReviewJson] = useState<string>(`[
   {
@@ -224,7 +313,7 @@ export default function AdminPage() {
   }
 ]`);
   const [bulkReviewStartAt, setBulkReviewStartAt] = useState<string>(
-    defaultLocalDateTime,
+    getDefaultLocalDateTime,
   );
   const [bulkReviewIntervalHours, setBulkReviewIntervalHours] =
     useState<number>(DEFAULT_BLOG_QUEUE_INTERVAL_HOURS);
@@ -235,11 +324,17 @@ export default function AdminPage() {
     "name": "Linear",
     "category": "project-management",
     "numericPrice": 8,
-    "oneLineOpinion": "Keyboard-first issue tracking with buttery-fast sync and opinionated workflows."
+    "oneLineOpinion": "Keyboard-first issue tracking with buttery-fast sync and opinionated workflows.",
+    "pricingModel": "per-seat",
+    "keyFeatures": ["Fast keyboard navigation", "Opinionated workflows"],
+    "limitations": ["Rigid for bespoke processes"],
+    "aiIncluded": false,
+    "freeTrial": true,
+    "freeForever": false
   }
 ]`);
   const [bulkToolStartAt, setBulkToolStartAt] = useState<string>(
-    defaultLocalDateTime,
+    getDefaultLocalDateTime,
   );
   const [bulkToolIntervalHours, setBulkToolIntervalHours] = useState<number>(
     DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
@@ -315,6 +410,21 @@ export default function AdminPage() {
                   numericPrice: Number(t.numeric_price || 0),
                   category: t.category,
                   oneLineOpinion: t.one_line_opinion || "",
+                  parentSlug: t.parent_slug || undefined,
+                  tierName: t.tier_name || undefined,
+                  pricingModel: t.pricing_model || undefined,
+                  keyFeatures: Array.isArray(t.key_features)
+                    ? t.key_features
+                    : [],
+                  limitations: Array.isArray(t.limitations)
+                    ? t.limitations
+                    : [],
+                  aiIncluded: Boolean(t.ai_included),
+                  aiCost: t.ai_cost || undefined,
+                  freeTrial: Boolean(t.free_trial),
+                  freeForever: Boolean(t.free_forever),
+                  iconUrl: t.icon_url || undefined,
+                  publicationDate: t.publication_date || undefined,
                 });
                 setRealtimeNotification(
                   `Real-time Cloud Event: Synchronized tool "${t.name}"`,
@@ -430,7 +540,9 @@ export default function AdminPage() {
         setIsAuthenticated(false);
         return;
       }
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
     };
     // Deferred to avoid synchronous state cycles during mounting
@@ -447,7 +559,9 @@ export default function AdminPage() {
 
   // Auto sign-out after 30 minutes of inactivity — only active when authenticated
   useIdleTimeout(
-    () => { if (isAuthenticated) handleSignOut(); },
+    () => {
+      if (isAuthenticated) handleSignOut();
+    },
     30 * 60 * 1000,
   );
 
@@ -593,11 +707,17 @@ export default function AdminPage() {
   const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toolForm.slug || !toolForm.name) return;
+    const toolToSave = formStateToTool(toolForm);
 
     const db = await import("@/lib/clientDb");
-    db.saveCustomTool(toolForm as Tool);
-    logAdminAction({ action: 'create', entity: 'tool', entitySlug: toolForm.slug, details: { name: toolForm.name } });
-    await pushBatchToCloud("tool", [toolForm as Tool]);
+    db.saveCustomTool(toolToSave);
+    logAdminAction({
+      action: "create",
+      entity: "tool",
+      entitySlug: toolForm.slug,
+      details: { name: toolForm.name },
+    });
+    await pushBatchToCloud("tool", [toolToSave]);
 
     triggerSuccessAlert(
       `Tool "${toolForm.name}" compiled and saved into the index database!`,
@@ -611,17 +731,53 @@ export default function AdminPage() {
       numericPrice: 15,
       category: "project-management",
       oneLineOpinion: "",
+      parentSlug: "",
+      tierName: "",
+      pricingModel: "",
+      keyFeatures: "",
+      limitations: "",
+      aiIncluded: false,
+      aiCost: "",
+      freeTrial: false,
+      freeForever: false,
       iconUrl: "",
+      publicationDate: getDefaultLocalDateTime(),
     });
 
     loadDatabase();
+  };
+
+  const uploadToolIcon = async (file: File): Promise<string> => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error("Supabase is not configured.");
+    }
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const uploadPath = `${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(TOOL_ICON_BUCKET)
+      .upload(uploadPath, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage
+      .from(TOOL_ICON_BUCKET)
+      .getPublicUrl(uploadPath);
+    return data.publicUrl;
   };
 
   // Delete Tool Action
   const handleDeleteTool = async (slug: string) => {
     const db = await import("@/lib/clientDb");
     db.deleteCustomTool(slug);
-    logAdminAction({ action: 'delete', entity: 'tool', entitySlug: slug });
+    logAdminAction({ action: "delete", entity: "tool", entitySlug: slug });
     if (supabaseActive) await deleteSupabaseRow("saas_tools", slug);
     triggerSuccessAlert("Tool removed successfully!");
     loadDatabase();
@@ -657,7 +813,12 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomReview(completeReview);
-    logAdminAction({ action: 'create', entity: 'review', entitySlug: reviewForm.slug, details: { title: reviewForm.title } });
+    logAdminAction({
+      action: "create",
+      entity: "review",
+      entitySlug: reviewForm.slug,
+      details: { title: reviewForm.title },
+    });
     await pushBatchToCloud("review", [completeReview]);
 
     triggerSuccessAlert(`Review matrix "${reviewForm.title}" synchronized!`);
@@ -688,7 +849,7 @@ export default function AdminPage() {
   const handleDeleteReview = async (slug: string) => {
     const db = await import("@/lib/clientDb");
     db.deleteCustomReview(slug);
-    logAdminAction({ action: 'delete', entity: 'review', entitySlug: slug });
+    logAdminAction({ action: "delete", entity: "review", entitySlug: slug });
     if (supabaseActive) await deleteSupabaseRow("saas_reviews", slug);
     triggerSuccessAlert("Comparison Review list entry wiped!");
     loadDatabase();
@@ -701,7 +862,12 @@ export default function AdminPage() {
 
     const db = await import("@/lib/clientDb");
     db.saveCustomBlogPost(blogForm);
-    logAdminAction({ action: 'create', entity: 'blog_post', entitySlug: blogForm.slug, details: { title: blogForm.title, issueNumber: blogForm.issueNumber } });
+    logAdminAction({
+      action: "create",
+      entity: "blog_post",
+      entitySlug: blogForm.slug,
+      details: { title: blogForm.title, issueNumber: blogForm.issueNumber },
+    });
     await pushBatchToCloud("blog", [blogForm]);
 
     triggerSuccessAlert(
@@ -766,16 +932,24 @@ export default function AdminPage() {
 
     const scheduled = getScheduledBlogPosts(blogsList);
     if (scheduled.length === 0) {
-      triggerSuccessAlert("No scheduled items found in the pipeline to reschedule.");
+      triggerSuccessAlert(
+        "No scheduled items found in the pipeline to reschedule.",
+      );
       return;
     }
 
-    const rescheduled = rescheduleBlogPosts(scheduled, startAt, pipelineIntervalHours);
-    
+    const rescheduled = rescheduleBlogPosts(
+      scheduled,
+      startAt,
+      pipelineIntervalHours,
+    );
+
     const db = await import("@/lib/clientDb");
     db.saveCustomBlogPosts(rescheduled);
 
-    triggerSuccessAlert(`Pipeline successfully rescheduled! Items will now dispatch every ${pipelineIntervalHours} hours.`);
+    triggerSuccessAlert(
+      `Pipeline successfully rescheduled! Items will now dispatch every ${pipelineIntervalHours} hours.`,
+    );
     await pushBatchToCloud("blog", rescheduled);
     loadDatabase();
   };
@@ -893,6 +1067,20 @@ export default function AdminPage() {
         }
 
         const numericPrice = Number(item?.numericPrice) || 0;
+        const keyFeatures = Array.isArray(item?.keyFeatures)
+          ? item.keyFeatures
+              .map((entry: any) => String(entry || "").trim())
+              .filter(Boolean)
+          : multilineToItems(String(item?.keyFeatures || ""));
+        const limitations = Array.isArray(item?.limitations)
+          ? item.limitations
+              .map((entry: any) => String(entry || "").trim())
+              .filter(Boolean)
+          : multilineToItems(String(item?.limitations || ""));
+        const publicationDateText = String(item?.publicationDate || "").trim();
+        const parsedPublicationDate = publicationDateText
+          ? new Date(publicationDateText)
+          : new Date();
 
         return {
           slug: String(item?.slug || "").trim() || slugify(name),
@@ -902,8 +1090,27 @@ export default function AdminPage() {
           startingPrice:
             String(item?.startingPrice || "").trim() || `$${numericPrice}/mo`,
           oneLineOpinion,
+          parentSlug:
+            String(item?.parentSlug || item?.parent_slug || "").trim() ||
+            undefined,
+          tierName:
+            String(item?.tierName || item?.tier_name || "").trim() || undefined,
+          pricingModel:
+            String(item?.pricingModel || item?.pricing_model || "").trim() ||
+            undefined,
+          keyFeatures,
+          limitations,
+          aiIncluded: Boolean(item?.aiIncluded ?? item?.ai_included),
+          aiCost:
+            String(item?.aiCost || item?.ai_cost || "").trim() || undefined,
+          freeTrial: Boolean(item?.freeTrial ?? item?.free_trial),
+          freeForever: Boolean(item?.freeForever ?? item?.free_forever),
           iconUrl: String(item?.iconUrl || "").trim() || undefined,
-          publicationDate: new Date().toISOString(),
+          publicationDate:
+            parsedPublicationDate &&
+            !Number.isNaN(parsedPublicationDate.getTime())
+              ? parsedPublicationDate.toISOString()
+              : new Date().toISOString(),
         };
       });
 
@@ -1129,14 +1336,7 @@ export default function AdminPage() {
 
   // Auto-fill form values on click triggers to ease editing tasks
   const editToolInForm = (tool: Tool) => {
-    setToolForm({
-      slug: tool.slug,
-      name: tool.name,
-      startingPrice: tool.startingPrice,
-      numericPrice: tool.numericPrice,
-      category: tool.category,
-      oneLineOpinion: tool.oneLineOpinion,
-    });
+    setToolForm(toolToFormState(tool));
     setActiveTab("tools");
   };
 
@@ -1532,10 +1732,14 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Name input */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
+                        <label
+                          htmlFor="tool-name-input"
+                          className="block font-bold text-slate-700"
+                        >
                           Tool Name:
                         </label>
                         <input
+                          id="tool-name-input"
                           type="text"
                           required
                           placeholder="e.g. Asana Premium"
@@ -1554,10 +1758,14 @@ export default function AdminPage() {
 
                       {/* Slug output (auto generated) */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-500">
+                        <label
+                          htmlFor="tool-slug-input"
+                          className="block font-bold text-slate-500"
+                        >
                           Dynamic URL Slug (Auto):
                         </label>
                         <input
+                          id="tool-slug-input"
                           type="text"
                           required
                           value={toolForm.slug}
@@ -1573,10 +1781,14 @@ export default function AdminPage() {
 
                       {/* Category select */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
+                        <label
+                          htmlFor="tool-category-select"
+                          className="block font-bold text-slate-700"
+                        >
                           Vertical Category:
                         </label>
                         <select
+                          id="tool-category-select"
                           value={toolForm.category}
                           onChange={(e) =>
                             setToolForm((prev) => ({
@@ -1596,15 +1808,19 @@ export default function AdminPage() {
 
                       {/* Numeric Price */}
                       <div className="space-y-1">
-                        <label className="block font-bold text-slate-750">
+                        <label
+                          htmlFor="tool-numeric-price-input"
+                          className="block font-bold text-slate-750"
+                        >
                           Starting Monthly price (numeric for TCO cost logic):
                         </label>
                         <input
+                          id="tool-numeric-price-input"
                           type="number"
                           required
                           value={toolForm.numericPrice}
                           onChange={(e) => {
-                            const num = parseFloat(e.target.value) || 0;
+                            const num = Number.parseFloat(e.target.value) || 0;
                             setToolForm((prev) => ({
                               ...prev,
                               numericPrice: num,
@@ -1619,7 +1835,10 @@ export default function AdminPage() {
                     {/* OneLine opinion text */}
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <label className="block font-bold text-slate-700">
+                        <label
+                          htmlFor="tool-one-line-opinion-input"
+                          className="block font-bold text-slate-700"
+                        >
                           One Line Opinion:
                         </label>
                         <span className="text-[10px] text-slate-400 font-mono">
@@ -1628,6 +1847,7 @@ export default function AdminPage() {
                         </span>
                       </div>
                       <input
+                        id="tool-one-line-opinion-input"
                         type="text"
                         required
                         maxLength={160}
@@ -1643,11 +1863,232 @@ export default function AdminPage() {
                       />
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-starting-price-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Starting Price:
+                        </label>
+                        <input
+                          id="tool-starting-price-input"
+                          type="text"
+                          placeholder="$15/mo"
+                          value={toolForm.startingPrice}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              startingPrice: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-parent-slug-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Parent Slug:
+                        </label>
+                        <input
+                          id="tool-parent-slug-input"
+                          type="text"
+                          placeholder="e.g. asana"
+                          value={toolForm.parentSlug}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              parentSlug: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-tier-name-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Tier Name:
+                        </label>
+                        <input
+                          id="tool-tier-name-input"
+                          type="text"
+                          placeholder="e.g. Pro, Business, Enterprise"
+                          value={toolForm.tierName}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              tierName: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-pricing-model-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Pricing Model:
+                        </label>
+                        <input
+                          id="tool-pricing-model-input"
+                          type="text"
+                          placeholder="e.g. per-seat, usage-based"
+                          value={toolForm.pricingModel}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              pricingModel: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-ai-cost-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          AI Cost:
+                        </label>
+                        <input
+                          id="tool-ai-cost-input"
+                          type="text"
+                          placeholder="e.g. Included, $20/mo, add-on"
+                          value={toolForm.aiCost}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              aiCost: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-publication-date-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Publication Date:
+                        </label>
+                        <input
+                          id="tool-publication-date-input"
+                          type="datetime-local"
+                          value={toolForm.publicationDate}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              publicationDate: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-key-features-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Key Features:
+                        </label>
+                        <textarea
+                          id="tool-key-features-input"
+                          rows={5}
+                          placeholder="One feature per line"
+                          value={toolForm.keyFeatures}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              keyFeatures: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg font-mono text-[11px]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="tool-limitations-input"
+                          className="block font-bold text-slate-700"
+                        >
+                          Limitations:
+                        </label>
+                        <textarea
+                          id="tool-limitations-input"
+                          rows={5}
+                          placeholder="One limitation per line"
+                          value={toolForm.limitations}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              limitations: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg font-mono text-[11px]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                      <label className="flex items-center gap-2 font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={toolForm.aiIncluded}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              aiIncluded: e.target.checked,
+                            }))
+                          }
+                        />
+                        AI Included
+                      </label>
+                      <label className="flex items-center gap-2 font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={toolForm.freeTrial}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              freeTrial: e.target.checked,
+                            }))
+                          }
+                        />
+                        Free Trial
+                      </label>
+                      <label className="flex items-center gap-2 font-bold text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={toolForm.freeForever}
+                          onChange={(e) =>
+                            setToolForm((prev) => ({
+                              ...prev,
+                              freeForever: e.target.checked,
+                            }))
+                          }
+                        />
+                        Free Forever
+                      </label>
+                    </div>
+
                     {/* Product Icon Selection */}
                     <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">
+                      <div className="block font-bold text-slate-700">
                         Product Brand Icon:
-                      </label>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 p-3 border border-slate-200 rounded-xl items-center">
                         {/* File Uploader */}
                         <div className="space-y-1.5 bg-white p-3 rounded-lg border border-slate-200">
@@ -1660,29 +2101,41 @@ export default function AdminPage() {
                               id="toolIconUpload"
                               accept="image/png,image/jpeg,image/webp"
                               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
-                                const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+                                const ALLOWED_TYPES = [
+                                  "image/png",
+                                  "image/jpeg",
+                                  "image/webp",
+                                ];
                                 const MAX_SIZE = 500 * 1024; // 500 KB
                                 if (!ALLOWED_TYPES.includes(file.type)) {
-                                  alert('Only PNG, JPG, and WebP files are allowed.');
-                                  e.target.value = '';
+                                  alert(
+                                    "Only PNG, JPG, and WebP files are allowed.",
+                                  );
+                                  e.target.value = "";
                                   return;
                                 }
                                 if (file.size > MAX_SIZE) {
-                                  alert('File size must be under 500 KB.');
-                                  e.target.value = '';
+                                  alert("File size must be under 500 KB.");
+                                  e.target.value = "";
                                   return;
                                 }
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
+
+                                try {
+                                  const publicUrl = await uploadToolIcon(file);
                                   setToolForm((prev) => ({
                                     ...prev,
-                                    iconUrl: reader.result as string,
+                                    iconUrl: publicUrl,
                                   }));
-                                };
-                                reader.readAsDataURL(file);
+                                } catch (error: any) {
+                                  alert(
+                                    error?.message ||
+                                      "Unable to upload the logo to Supabase Storage.",
+                                  );
+                                  e.target.value = "";
+                                }
                               }}
                             />
                             <div className="text-[11px] text-slate-600 font-bold">
@@ -1703,12 +2156,15 @@ export default function AdminPage() {
                             <input
                               type="url"
                               placeholder="e.g. https://domain.com/logo.png"
-                              value={toolForm.iconUrl?.startsWith('data:') ? '' : (toolForm.iconUrl || "")}
+                              value={toolForm.iconUrl || ""}
                               onChange={(e) => {
                                 const val = e.target.value.trim();
                                 // Only accept empty or valid HTTPS URLs
-                                if (val && !val.startsWith('https://')) return;
-                                setToolForm((prev) => ({ ...prev, iconUrl: val }));
+                                if (val && !val.startsWith("https://")) return;
+                                setToolForm((prev) => ({
+                                  ...prev,
+                                  iconUrl: val,
+                                }));
                               }}
                               className="w-full mt-1.5 p-2 border border-slate-250 bg-white rounded-lg text-[11px]"
                             />
@@ -2863,208 +3319,223 @@ export default function AdminPage() {
                   </div>
 
                   {pipelineSubTab === "blog" && (
-                  <>
-                  {/* ---- BLOG bulk uploader ---- */}
-                  <form
-                    onSubmit={handleSaveBulkBlogQueue}
-                    className="space-y-4 bg-emerald-50/40 p-4 border border-emerald-100 rounded-xl text-xs"
-                  >
-                    <div className="flex justify-between items-center pb-2 border-b border-emerald-100">
-                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
-                        Bulk-queue blog batch
-                      </h3>
-                      <span className="text-[10px] font-mono text-slate-500">
-                        Drip every {bulkBlogIntervalHours}h
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1 md:col-span-2">
-                        <label className="block font-bold text-slate-700">
-                          Batch start date/time
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={bulkBlogStartAt}
-                          onChange={(e) => setBulkBlogStartAt(e.target.value)}
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
+                    <>
+                      {/* ---- BLOG bulk uploader ---- */}
+                      <form
+                        onSubmit={handleSaveBulkBlogQueue}
+                        className="space-y-4 bg-emerald-50/40 p-4 border border-emerald-100 rounded-xl text-xs"
+                      >
+                        <div className="flex justify-between items-center pb-2 border-b border-emerald-100">
+                          <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                            Bulk-queue blog batch
+                          </h3>
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Drip every {bulkBlogIntervalHours}h
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="block font-bold text-slate-700">
+                              Batch start date/time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={bulkBlogStartAt}
+                              onChange={(e) =>
+                                setBulkBlogStartAt(e.target.value)
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Hours between drops
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={bulkBlogIntervalHours}
+                              onChange={(e) =>
+                                setBulkBlogIntervalHours(
+                                  Number(e.target.value) ||
+                                    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                                )
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block font-bold text-slate-700">
+                            Bulk article payload (JSON array)
+                          </label>
+                          <textarea
+                            rows={8}
+                            value={bulkBlogDraftJson}
+                            onChange={(e) =>
+                              setBulkBlogDraftJson(e.target.value)
+                            }
+                            className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            Each object needs `title`, `excerpt`, `category`,
+                            and `contentMarkdown`. Optional `slug`, `readTime`,
+                            `issueNumber`.
+                          </p>
+                        </div>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                        >
+                          <CloudUpload className="h-3.5 w-3.5" />
+                          <span>Queue Blog Batch</span>
+                        </button>
+                      </form>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Queued for dispatch
+                          </span>
+                          <span className="block text-2xl font-black text-slate-950 mt-1">
+                            {scheduledBlogsCount} items
+                          </span>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                          <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            Current Pipeline Status
+                          </span>
+                          {scheduledBlogsCount > 0 ? (
+                            <span className="mt-1 flex items-center gap-2 text-emerald-700 font-bold">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                              Flowing
+                            </span>
+                          ) : (
+                            <span className="mt-1 flex items-center gap-2 text-rose-700 font-bold">
+                              <span className="h-2 w-2 rounded-full bg-rose-500" />
+                              Dry (Needs Content)
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
-                          Hours between drops
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={bulkBlogIntervalHours}
-                          onChange={(e) =>
-                            setBulkBlogIntervalHours(
-                              Number(e.target.value) ||
-                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
-                            )
-                          }
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">
-                        Bulk article payload (JSON array)
-                      </label>
-                      <textarea
-                        rows={8}
-                        value={bulkBlogDraftJson}
-                        onChange={(e) => setBulkBlogDraftJson(e.target.value)}
-                        className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
-                      />
-                      <p className="text-[10px] text-slate-500">
-                        Each object needs `title`, `excerpt`, `category`, and
-                        `contentMarkdown`. Optional `slug`, `readTime`,
-                        `issueNumber`.
-                      </p>
-                    </div>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
-                    >
-                      <CloudUpload className="h-3.5 w-3.5" />
-                      <span>Queue Blog Batch</span>
-                    </button>
-                  </form>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
-                        Queued for dispatch
-                      </span>
-                      <span className="block text-2xl font-black text-slate-950 mt-1">
-                        {scheduledBlogsCount} items
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                      <span className="block text-[10px] uppercase tracking-widest font-bold text-slate-400">
-                        Current Pipeline Status
-                      </span>
-                      {scheduledBlogsCount > 0 ? (
-                        <span className="mt-1 flex items-center gap-2 text-emerald-700 font-bold">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          Flowing
-                        </span>
-                      ) : (
-                        <span className="mt-1 flex items-center gap-2 text-rose-700 font-bold">
-                          <span className="h-2 w-2 rounded-full bg-rose-500" />
-                          Dry (Needs Content)
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                      <form
+                        onSubmit={handleReschedulePipeline}
+                        className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
+                      >
+                        <div className="flex justify-between items-center pb-2 border-b border-blue-100">
+                          <h3 className="font-bold text-slate-900 uppercase tracking-wider">
+                            Reschedule Active Pipeline
+                          </h3>
+                        </div>
 
-                  <form
-                    onSubmit={handleReschedulePipeline}
-                    className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
-                  >
-                    <div className="flex justify-between items-center pb-2 border-b border-blue-100">
-                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
-                        Reschedule Active Pipeline
-                      </h3>
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              New baseline Start Date/Time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={pipelineStartAt}
+                              onChange={(e) =>
+                                setPipelineStartAt(e.target.value)
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Hours gap between queued posts
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={pipelineIntervalHours}
+                              onChange={(e) =>
+                                setPipelineIntervalHours(
+                                  Number(e.target.value) ||
+                                    DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
+                                )
+                              }
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
-                          New baseline Start Date/Time
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={pipelineStartAt}
-                          onChange={(e) => setPipelineStartAt(e.target.value)}
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
-                          Hours gap between queued posts
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={pipelineIntervalHours}
-                          onChange={(e) =>
-                            setPipelineIntervalHours(
-                              Number(e.target.value) ||
-                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
-                            )
-                          }
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
-                      </div>
-                    </div>
+                        <button
+                          type="submit"
+                          disabled={scheduledBlogsCount === 0}
+                          className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span>Reschedule Pipeline Now</span>
+                        </button>
+                      </form>
 
-                    <button
-                      type="submit"
-                      disabled={scheduledBlogsCount === 0}
-                      className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      <span>Reschedule Pipeline Now</span>
-                    </button>
-                  </form>
-
-                  {/* List Pipeline Items */}
-                  <div className="space-y-3">
-                    <h3 className="font-bold text-slate-800 text-sm font-sans">
-                      Upcoming Queued Drops
-                    </h3>
-                    {scheduledBlogsCount > 0 ? (
-                      <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
-                              <th className="p-3 font-bold">Issue Title</th>
-                              <th className="p-3 font-bold">Drop Schedule</th>
-                              <th className="p-3 font-bold text-right">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {getScheduledBlogPosts(blogsList).map((b) => (
-                              <tr key={b.slug} className="hover:bg-slate-50/50">
-                                <td className="p-3">
-                                  <Link
-                                    href={`/blog/${b.slug}`}
-                                    target="_blank"
-                                    className="font-bold text-amber-600 hover:underline flex items-center gap-1"
+                      {/* List Pipeline Items */}
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-slate-800 text-sm font-sans">
+                          Upcoming Queued Drops
+                        </h3>
+                        {scheduledBlogsCount > 0 ? (
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                            <table className="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
+                                  <th className="p-3 font-bold">Issue Title</th>
+                                  <th className="p-3 font-bold">
+                                    Drop Schedule
+                                  </th>
+                                  <th className="p-3 font-bold text-right">
+                                    Action
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {getScheduledBlogPosts(blogsList).map((b) => (
+                                  <tr
+                                    key={b.slug}
+                                    className="hover:bg-slate-50/50"
                                   >
-                                    <span>
-                                      Issue #{b.issueNumber} - {b.title}
-                                    </span>
-                                  </Link>
-                                </td>
-                                <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
-                                  {formatBlogPublicationDate(b.publicationDate)}
-                                </td>
-                                <td className="p-3 text-right">
-                                  <button
-                                    onClick={() => editBlogInForm(b)}
-                                    className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
-                                  >
-                                    Edit Details
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                    <td className="p-3">
+                                      <Link
+                                        href={`/blog/${b.slug}`}
+                                        target="_blank"
+                                        className="font-bold text-amber-600 hover:underline flex items-center gap-1"
+                                      >
+                                        <span>
+                                          Issue #{b.issueNumber} - {b.title}
+                                        </span>
+                                      </Link>
+                                    </td>
+                                    <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
+                                      {formatBlogPublicationDate(
+                                        b.publicationDate,
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      <button
+                                        onClick={() => editBlogInForm(b)}
+                                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                                      >
+                                        Edit Details
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
+                            The pipeline is empty. Queue items from the Blogs
+                            editor first.
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="p-6 border border-slate-200 border-dashed rounded-xl text-center text-slate-500 font-bold bg-white">
-                        The pipeline is empty. Queue items from the Blogs editor
-                        first.
-                      </div>
-                    )}
-                  </div>
-                  </>
+                    </>
                   )}
 
                   {/* ============================================
@@ -3196,7 +3667,9 @@ export default function AdminPage() {
                               <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
                                   <th className="p-3 font-bold">Review</th>
-                                  <th className="p-3 font-bold">Drop Schedule</th>
+                                  <th className="p-3 font-bold">
+                                    Drop Schedule
+                                  </th>
                                   <th className="p-3 font-bold text-right">
                                     Action
                                   </th>
@@ -3217,7 +3690,8 @@ export default function AdminPage() {
                                     <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
                                       {formatScheduleDate(r.publicationDate)}
                                       <span className="block text-[9px] text-amber-600">
-                                        in {hoursUntilPublish(r.publicationDate)}h
+                                        in{" "}
+                                        {hoursUntilPublish(r.publicationDate)}h
                                       </span>
                                     </td>
                                     <td className="p-3 text-right">
@@ -3370,7 +3844,9 @@ export default function AdminPage() {
                               <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-605">
                                   <th className="p-3 font-bold">Tool</th>
-                                  <th className="p-3 font-bold">Drop Schedule</th>
+                                  <th className="p-3 font-bold">
+                                    Drop Schedule
+                                  </th>
                                   <th className="p-3 font-bold text-right">
                                     Action
                                   </th>
@@ -3391,7 +3867,8 @@ export default function AdminPage() {
                                     <td className="p-3 font-mono text-slate-600 font-bold text-[11px]">
                                       {formatScheduleDate(t.publicationDate)}
                                       <span className="block text-[9px] text-amber-600">
-                                        in {hoursUntilPublish(t.publicationDate)}h
+                                        in{" "}
+                                        {hoursUntilPublish(t.publicationDate)}h
                                       </span>
                                     </td>
                                     <td className="p-3 text-right">

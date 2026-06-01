@@ -1,62 +1,65 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { AdContainer } from '@/components/AdContainer';
-import { Hero3DScene } from '@/components/Hero3DScene';
-import { ReviewCard } from '@/components/ReviewCard';
-import { ReviewCardSkeleton } from '@/components/Skeletons';
-import { SectionHeading } from '@/components/SectionHeading';
-import { CATEGORIES, Category, Review, Tool } from '@/lib/data';
-import { 
-  Coins, 
-  Layers, 
-  Users, 
-  ClipboardList, 
-  MessageSquare, 
-  Cpu, 
-  Megaphone, 
-  Palette, 
-  Search, 
-  Sliders, 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle2, 
-  Grid, 
+import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { AdContainer } from "@/components/AdContainer";
+import { Hero3DScene } from "@/components/Hero3DScene";
+import { ReviewCard } from "@/components/ReviewCard";
+import { ReviewCardSkeleton } from "@/components/Skeletons";
+import { SectionHeading } from "@/components/SectionHeading";
+import { CATEGORIES, Category, Review, Tool } from "@/lib/data";
+import {
+  Coins,
+  Layers,
+  Users,
+  ClipboardList,
+  MessageSquare,
+  Cpu,
+  Megaphone,
+  Palette,
+  Search,
+  Sliders,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  Grid,
   Award,
   Zap,
   Check,
   TrendingUp,
   SlidersHorizontal,
-  ChevronDown
-} from 'lucide-react';
+  ChevronDown,
+} from "lucide-react";
 
-const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  'accounting': Coins,
-  'project-management': Layers,
-  'crm': Users,
-  'hr-payroll': ClipboardList,
-  'communications': MessageSquare,
-  'developer-tools': Cpu,
-  'marketing': Megaphone,
-  'design': Palette
+const CATEGORY_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
+  accounting: Coins,
+  "project-management": Layers,
+  crm: Users,
+  "hr-payroll": ClipboardList,
+  communications: MessageSquare,
+  "developer-tools": Cpu,
+  marketing: Megaphone,
+  design: Palette,
 };
 
 export default function Page() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeReviews, setActiveReviews] = useState<Review[]>([]);
   const [activeTools, setActiveTools] = useState<Tool[]>([]);
-  const [selectedQuickReview, setSelectedQuickReview] = useState<string>('');
+  const [selectedQuickReview, setSelectedQuickReview] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    import('@/lib/contentSource').then(async (src) => {
+    import("@/lib/contentSource").then(async (src) => {
       const [reviews, tools] = await Promise.all([
         src.getPublishedReviews(),
         src.getPublishedTools(),
@@ -70,36 +73,37 @@ export default function Page() {
   // Compute selected review and details
   const selectedReviewObj = useMemo(() => {
     if (!selectedQuickReview) return null;
-    return activeReviews.find(r => r.slug === selectedQuickReview) || null;
+    return activeReviews.find((r) => r.slug === selectedQuickReview) || null;
   }, [selectedQuickReview, activeReviews]);
 
   const resolvedToolA = useMemo(() => {
     if (!selectedReviewObj) return null;
-    return activeTools.find(t => t.slug === selectedReviewObj.toolA) || null;
+    return activeTools.find((t) => t.slug === selectedReviewObj.toolA) || null;
   }, [selectedReviewObj, activeTools]);
 
   const resolvedToolB = useMemo(() => {
     if (!selectedReviewObj) return null;
-    return activeTools.find(t => t.slug === selectedReviewObj.toolB) || null;
+    return activeTools.find((t) => t.slug === selectedReviewObj.toolB) || null;
   }, [selectedReviewObj, activeTools]);
 
   // Extract categories lists
   const filterCategories = useMemo(() => {
-    return ['All', ...CATEGORIES.map(c => c.name)];
+    return ["All", ...CATEGORIES.map((c) => c.name)];
   }, []);
 
   // Filter reviews
   const filteredReviews = useMemo(() => {
-    return activeReviews.filter(review => {
-      const categoryObj = CATEGORIES.find(c => c.slug === review.category);
-      const categoryName = categoryObj ? categoryObj.name : 'All';
-      
-      const matchesCategory = selectedCategory === 'All' || categoryName === selectedCategory;
-      const matchesSearch = 
-        review.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    return activeReviews.filter((review) => {
+      const categoryObj = CATEGORIES.find((c) => c.slug === review.category);
+      const categoryName = categoryObj ? categoryObj.name : "All";
+
+      const matchesCategory =
+        selectedCategory === "All" || categoryName === selectedCategory;
+      const matchesSearch =
+        review.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         review.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
         review.category.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
       return matchesCategory && matchesSearch;
     });
   }, [selectedCategory, searchTerm, activeReviews]);
@@ -117,7 +121,6 @@ export default function Page() {
       <Header />
 
       <main id="homepage-root" className="flex flex-col">
-        
         {/* SECTION 1: CATCHING, HERO INTERACTIVE EXPEDITION PANEL */}
         <section className="relative bg-white pt-16 pb-16 lg:py-24 border-b border-slate-100 overflow-hidden text-center">
           {/* Subtle warm architectural backdrop circle */}
@@ -125,7 +128,6 @@ export default function Page() {
           <div className="absolute bottom-0 left-12 w-[300px] h-[300px] bg-amber-50/30 rounded-full blur-3xl -z-10 pointer-events-none" />
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-            
             {/* Premium & Free tags */}
             <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
               <div className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-500 px-4 py-1.5 rounded-full select-none">
@@ -145,16 +147,25 @@ export default function Page() {
             <div className="space-y-6 mb-10 w-full">
               <h1 className="text-4xl md:text-6xl lg:text-[72px] font-black text-slate-900 leading-[1.05] tracking-tight">
                 Remaking the way <br />
-                we compare <span className="text-rose-500 italic font-serif font-normal">SaaS tools</span>.
+                we compare{" "}
+                <span className="text-rose-500 italic font-serif font-normal">
+                  SaaS tools
+                </span>
+                .
               </h1>
               <p className="text-sm md:text-base leading-relaxed text-slate-500 max-w-2xl mx-auto font-medium">
-                Analytical side-by-side matrices comparing accurate performance loads, licensing price traps, and legal GAAP compliance &mdash; audited objectively in our clean-room laboratory.
+                Analytical side-by-side matrices comparing accurate performance
+                loads, licensing price traps, and legal GAAP compliance &mdash;
+                audited objectively in our clean-room laboratory.
               </p>
             </div>
 
             {/* Airbnb-style Dynamic Search Form console card */}
             <div className="bg-white border border-slate-200/80 rounded-[28px] p-2 shadow-sm w-full max-w-2xl mx-auto relative z-20">
-              <form onSubmit={handleQuickCompareGo} className="flex flex-col sm:flex-row items-center w-full gap-2">
+              <form
+                onSubmit={handleQuickCompareGo}
+                className="flex flex-col sm:flex-row items-center w-full gap-2"
+              >
                 {/* Dropdown to select matrix comparison */}
                 <div className="w-full relative">
                   <button
@@ -163,45 +174,76 @@ export default function Page() {
                     className="w-full text-left flex items-center justify-between text-sm font-semibold bg-white rounded-[20px] py-3.5 px-5 text-slate-800 transition-colors focus:outline-none cursor-pointer"
                   >
                     <span className="truncate text-slate-600 font-medium">
-                      {selectedQuickReview 
-                        ? activeReviews.find(r => r.slug === selectedQuickReview)?.title 
+                      {selectedQuickReview
+                        ? activeReviews.find(
+                            (r) => r.slug === selectedQuickReview,
+                          )?.title
                         : "Choose an active study..."}
                     </span>
-                    <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
-                  
+
                   {isDropdownOpen && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsDropdownOpen(false)}
+                      />
                       <ul className="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl max-h-64 overflow-y-auto py-2 text-left">
                         <li
-                          onClick={() => { setSelectedQuickReview(''); setIsDropdownOpen(false); }}
+                          onClick={() => {
+                            setSelectedQuickReview("");
+                            setIsDropdownOpen(false);
+                          }}
                           className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-500"
                         >
                           Choose an active study...
                         </li>
                         {activeReviews.map((r) => {
-                          const toolA = activeTools.find(t => t.slug === r.toolA);
-                          const toolB = activeTools.find(t => t.slug === r.toolB);
+                          const toolA = activeTools.find(
+                            (t) => t.slug === r.toolA,
+                          );
+                          const toolB = activeTools.find(
+                            (t) => t.slug === r.toolB,
+                          );
                           return (
                             <li
                               key={r.slug}
-                              onClick={() => { setSelectedQuickReview(r.slug); setIsDropdownOpen(false); }}
+                              onClick={() => {
+                                setSelectedQuickReview(r.slug);
+                                setIsDropdownOpen(false);
+                              }}
                               className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors border-t border-slate-50 first:border-0"
                             >
                               <div className="flex items-center -space-x-2 shrink-0">
                                 {toolA?.iconUrl ? (
-                                  <img src={toolA.iconUrl} alt={toolA.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10" referrerPolicy="no-referrer" />
+                                  <img
+                                    src={toolA.iconUrl}
+                                    alt={toolA.name}
+                                    className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10"
+                                    referrerPolicy="no-referrer"
+                                  />
                                 ) : (
                                   <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
-                                    {toolA?.name?.substring(0, 2).toUpperCase() || 'A'}
+                                    {toolA?.name
+                                      ?.substring(0, 2)
+                                      .toUpperCase() || "A"}
                                   </div>
                                 )}
                                 {toolB?.iconUrl ? (
-                                  <img src={toolB.iconUrl} alt={toolB.name} className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0" referrerPolicy="no-referrer" />
+                                  <img
+                                    src={toolB.iconUrl}
+                                    alt={toolB.name}
+                                    className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0"
+                                    referrerPolicy="no-referrer"
+                                  />
                                 ) : (
                                   <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
-                                    {toolB?.name?.substring(0, 2).toUpperCase() || 'B'}
+                                    {toolB?.name
+                                      ?.substring(0, 2)
+                                      .toUpperCase() || "B"}
                                   </div>
                                 )}
                               </div>
@@ -221,9 +263,11 @@ export default function Page() {
                   <button
                     type="submit"
                     disabled={!selectedQuickReview}
-                    style={{ minHeight: '44px' }}
+                    style={{ minHeight: "44px" }}
                     className={`w-full sm:w-auto text-[11px] font-bold uppercase tracking-widest bg-slate-950 border border-transparent text-white px-8 rounded-full hover:bg-slate-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
-                      !selectedQuickReview ? 'opacity-50 cursor-not-allowed bg-slate-800' : ''
+                      !selectedQuickReview
+                        ? "opacity-50 cursor-not-allowed bg-slate-800"
+                        : ""
                     }`}
                   >
                     Compare
@@ -231,7 +275,7 @@ export default function Page() {
                   </button>
                 </div>
               </form>
-              
+
               <div className="flex items-center justify-center gap-6 mt-4 pb-3 text-[11px] text-slate-600 font-medium">
                 <span className="flex items-center gap-1.5">
                   <Check className="h-3.5 w-3.5 text-emerald-500 stroke-[3]" />
@@ -268,7 +312,9 @@ export default function Page() {
                           {resolvedToolA.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{resolvedToolA.name}</h4>
+                      <h4 className="text-sm font-bold text-slate-900 truncate">
+                        {resolvedToolA.name}
+                      </h4>
                     </div>
                     <span className="inline-block self-start text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                       {resolvedToolA.startingPrice}
@@ -300,7 +346,9 @@ export default function Page() {
                           {resolvedToolB.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{resolvedToolB.name}</h4>
+                      <h4 className="text-sm font-bold text-slate-900 truncate">
+                        {resolvedToolB.name}
+                      </h4>
                     </div>
                     <span className="inline-block self-start text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                       {resolvedToolB.startingPrice}
@@ -325,11 +373,10 @@ export default function Page() {
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-[9px] sm:text-[10px] font-black tracking-widest uppercase text-slate-400 mt-16 sm:mt-20">
               <span>TRUSTED BY 2,400+ BUYERS</span>
               <span className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block"></span>
-              <span>184 AUDITED TOOLS</span>
+              <span>{activeTools.length} AUDITED TOOLS</span>
               <span className="h-1 w-1 rounded-full bg-slate-300 hidden sm:block"></span>
               <span>0 SPONSORED PLACEMENTS</span>
             </div>
-
           </div>
         </section>
 
@@ -341,23 +388,53 @@ export default function Page() {
                 Our Platform Specialities
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Created by a highly professional team of auditors, our platform provides powerful features designed to help you analyze and discover the perfect tools for your stack.
+                Created by a highly professional team of auditors, our platform
+                provides powerful features designed to help you analyze and
+                discover the perfect tools for your stack.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { title: 'Compare Tools', desc: 'Side-by-side matrices of top SaaS products to evaluate performance and pricing.', href: '/compare', icon: <SlidersHorizontal className="h-6 w-6 text-rose-500" /> },
-                { title: 'Detailed Reviews', desc: 'In-depth analysis from our expert auditing team, ensuring GAAP compliance.', href: '/reviews', icon: <ClipboardList className="h-6 w-6 text-emerald-500" /> },
-                { title: 'ROI Calculator', desc: 'Compute costs and find savings with real-time scaling scenarios.', href: '/calculator', icon: <Coins className="h-6 w-6 text-blue-500" /> },
-                { title: 'Auditor Blog', desc: 'Insights and actionable trends from the SaaS industry professionals.', href: '/blog', icon: <Megaphone className="h-6 w-6 text-amber-500" /> },
+                {
+                  title: "Compare Tools",
+                  desc: "Side-by-side matrices of top SaaS products to evaluate performance and pricing.",
+                  href: "/compare",
+                  icon: <SlidersHorizontal className="h-6 w-6 text-rose-500" />,
+                },
+                {
+                  title: "Detailed Reviews",
+                  desc: "In-depth analysis from our expert auditing team, ensuring GAAP compliance.",
+                  href: "/reviews",
+                  icon: <ClipboardList className="h-6 w-6 text-emerald-500" />,
+                },
+                {
+                  title: "ROI Calculator",
+                  desc: "Compute costs and find savings with real-time scaling scenarios.",
+                  href: "/calculator",
+                  icon: <Coins className="h-6 w-6 text-blue-500" />,
+                },
+                {
+                  title: "Auditor Blog",
+                  desc: "Insights and actionable trends from the SaaS industry professionals.",
+                  href: "/blog",
+                  icon: <Megaphone className="h-6 w-6 text-amber-500" />,
+                },
               ].map((spec) => (
-                <Link key={spec.title} href={spec.href} className="group block bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:border-rose-200 transition-all cursor-pointer">
+                <Link
+                  key={spec.title}
+                  href={spec.href}
+                  className="group block bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-xl hover:border-rose-200 transition-all cursor-pointer"
+                >
                   <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-rose-50 transition-all shadow-sm">
                     {spec.icon}
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{spec.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{spec.desc}</p>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">
+                    {spec.title}
+                  </h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    {spec.desc}
+                  </p>
                 </Link>
               ))}
             </div>
@@ -365,15 +442,19 @@ export default function Page() {
         </section>
 
         {/* SECTION 2: AIRBNB CATEGORIES STRIP BAR & DIRECTORY MATRIX EXPLORER */}
-        <section id="directory" className="py-14 bg-[#FCFCFA] border-b border-slate-100">
+        <section
+          id="directory"
+          className="py-14 bg-[#FCFCFA] border-b border-slate-100"
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
             <div className="text-center max-w-2xl mx-auto mb-10 space-y-3">
               <h2 className="text-3xl font-black tracking-tight text-slate-900 leading-none">
                 Explore Evaluated Stacks
               </h2>
               <p className="text-sm text-slate-500">
-                Choose a vertical below to instantly inspect verified comparisons. Each score tracks actual transaction speed, direct payment transparency, and team scaling multipliers.
+                Choose a vertical below to instantly inspect verified
+                comparisons. Each score tracks actual transaction speed, direct
+                payment transparency, and team scaling multipliers.
               </p>
             </div>
 
@@ -383,25 +464,28 @@ export default function Page() {
                 <div className="flex items-center gap-8 md:gap-10">
                   {filterCategories.map((name) => {
                     const isSelected = selectedCategory === name;
-                    
+
                     // Match slug for icon identification
-                    const categoryObj = CATEGORIES.find(c => c.name === name);
-                    const slug = categoryObj ? categoryObj.slug : 'all';
-                    const IconComponent = slug === 'all' ? Grid : (CATEGORY_ICONS[slug] || Zap);
+                    const categoryObj = CATEGORIES.find((c) => c.name === name);
+                    const slug = categoryObj ? categoryObj.slug : "all";
+                    const IconComponent =
+                      slug === "all" ? Grid : CATEGORY_ICONS[slug] || Zap;
 
                     return (
                       <button
                         key={name}
                         onClick={() => setSelectedCategory(name)}
                         className={`flex flex-col items-center gap-2 pb-3.5 transition-all outline-none cursor-pointer border-b-2 ${
-                          isSelected 
-                            ? 'border-rose-500 text-rose-600 font-bold scale-102' 
-                            : 'border-transparent text-slate-450 hover:text-slate-800 hover:border-slate-350'
+                          isSelected
+                            ? "border-rose-500 text-rose-600 font-bold scale-102"
+                            : "border-transparent text-slate-450 hover:text-slate-800 hover:border-slate-350"
                         }`}
                       >
-                        <IconComponent className={`h-6 w-6 transition-transform group-hover:scale-105 ${
-                          isSelected ? 'text-rose-500' : 'text-slate-400'
-                        }`} />
+                        <IconComponent
+                          className={`h-6 w-6 transition-transform group-hover:scale-105 ${
+                            isSelected ? "text-rose-500" : "text-slate-400"
+                          }`}
+                        />
                         <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
                           {name}
                         </span>
@@ -412,8 +496,11 @@ export default function Page() {
 
                 {/* Vertical slider controls button */}
                 <div className="hidden lg:flex items-center gap-2 border-l border-slate-200 pl-4">
-                  <button 
-                    onClick={() => { setSelectedCategory('All'); setSearchTerm(''); }}
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("All");
+                      setSearchTerm("");
+                    }}
                     className="flex items-center gap-1.5 bg-white border border-slate-205 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 hover:shadow-xs transition-shadow cursor-pointer"
                   >
                     <SlidersHorizontal className="h-3.5 w-3.5 text-rose-500" />
@@ -426,8 +513,10 @@ export default function Page() {
             {/* LIVE DYNAMIC SEARCH & MATRIX COUNTER */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-10">
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Showing {filteredReviews.length} verified comparisons in{' '}
-                <span className="text-rose-600 font-black">[{selectedCategory.toUpperCase()}]</span>
+                Showing {filteredReviews.length} verified comparisons in{" "}
+                <span className="text-rose-600 font-black">
+                  [{selectedCategory.toUpperCase()}]
+                </span>
               </div>
 
               {/* Dynamic search box */}
@@ -448,12 +537,14 @@ export default function Page() {
 
             {/* AD CONTAINER AT TOP OF THE FOLD */}
             <div className="max-w-7xl mx-auto mb-8">
-              <AdContainer layoutType="top-banner" slotId="homepage-leaderboard" />
+              <AdContainer
+                layoutType="top-banner"
+                slotId="homepage-leaderboard"
+              />
             </div>
 
             {/* DIRECTORY CARDS GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-              
               {/* Reviews Grid */}
               <div className="lg:col-span-8 flex flex-col gap-6">
                 {isLoading ? (
@@ -472,15 +563,24 @@ export default function Page() {
                     })}
                   </div>
                 ) : (
-                  <div id="no-reviews-box" className="text-center py-24 px-6 bg-white border border-slate-200/90 rounded-[28px] space-y-4">
+                  <div
+                    id="no-reviews-box"
+                    className="text-center py-24 px-6 bg-white border border-slate-200/90 rounded-[28px] space-y-4"
+                  >
                     <SlidersHorizontal className="h-10 w-10 text-slate-300 mx-auto animate-pulse" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">No matching studies found</h3>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                      No matching studies found
+                    </h3>
                     <p className="text-xs text-slate-450 max-w-sm mx-auto leading-relaxed">
-                      We haven&apos;t indexed this exact SaaS pair in our lab yet. Let us know what we should benchmark next!
+                      We haven&apos;t indexed this exact SaaS pair in our lab
+                      yet. Let us know what we should benchmark next!
                     </p>
                     <button
                       id="clear-all-params-btn"
-                      onClick={() => { setSearchTerm(''); setSelectedCategory('All'); }}
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedCategory("All");
+                      }}
                       className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors inline-block pt-1 cursor-pointer"
                     >
                       Reset active search filters
@@ -490,13 +590,15 @@ export default function Page() {
 
                 {/* Inline advertisement */}
                 <div className="pt-2">
-                  <AdContainer layoutType="inline-content" slotId="home-inline-middle" />
+                  <AdContainer
+                    layoutType="inline-content"
+                    slotId="home-inline-middle"
+                  />
                 </div>
               </div>
 
               {/* Sidebar Information Cards */}
               <aside className="lg:col-span-4 space-y-6">
-                
                 {/* Clean, high-converting interactive tools card */}
                 <div className="bg-white border border-slate-200/90 p-6 rounded-[28px] space-y-4 shadow-xs">
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-rose-500 block">
@@ -506,9 +608,10 @@ export default function Page() {
                     SaaS evaluation calculators
                   </h4>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Test different direct license tiers, compute team cost metrics, or estimate stack overhead in real-time.
+                    Test different direct license tiers, compute team cost
+                    metrics, or estimate stack overhead in real-time.
                   </p>
-                  
+
                   <div className="flex flex-col gap-2 pt-2">
                     <Link
                       id="sidebar-link-compare"
@@ -516,16 +619,20 @@ export default function Page() {
                       className="flex items-center justify-between text-xs font-bold text-slate-850 bg-slate-50 hover:bg-slate-100 py-3.5 px-4 rounded-xl transition-all border border-slate-200 hover:border-slate-300"
                     >
                       <span>Custom Compare Generator</span>
-                      <span className="text-rose-500 font-extrabold">&rarr;</span>
+                      <span className="text-rose-500 font-extrabold">
+                        &rarr;
+                      </span>
                     </Link>
-                    
+
                     <Link
                       id="sidebar-link-calculator"
                       href="/calculator"
                       className="flex items-center justify-between text-xs font-bold text-slate-850 bg-slate-50 hover:bg-slate-100 py-3.5 px-4 rounded-xl transition-all border border-slate-200 hover:border-slate-300"
                     >
                       <span>Compute SaaS ROI Core</span>
-                      <span className="text-rose-500 font-extrabold">&rarr;</span>
+                      <span className="text-rose-500 font-extrabold">
+                        &rarr;
+                      </span>
                     </Link>
                   </div>
                 </div>
@@ -537,37 +644,53 @@ export default function Page() {
                   </h4>
                   <div className="space-y-3.5 text-xs text-slate-500">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-slate-600">Integrations Load Metrics</span>
-                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">45%</strong>
+                      <span className="font-medium text-slate-600">
+                        Integrations Load Metrics
+                      </span>
+                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
+                        45%
+                      </strong>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-slate-600">Financial Transparency</span>
-                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">35%</strong>
+                      <span className="font-medium text-slate-600">
+                        Financial Transparency
+                      </span>
+                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
+                        35%
+                      </strong>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-slate-600">Scaling Value Ratios</span>
-                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">20%</strong>
+                      <span className="font-medium text-slate-600">
+                        Scaling Value Ratios
+                      </span>
+                      <strong className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
+                        20%
+                      </strong>
                     </div>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-normal pt-2 border-t border-slate-100">
-                    Weights computed according to strict CPA enterprise standards matching global index parameters.
+                    Weights computed according to strict CPA enterprise
+                    standards matching global index parameters.
                   </p>
                 </div>
 
                 {/* Sticky skyscraper ad card */}
                 <div className="sticky top-[100px] pt-4">
-                  <AdContainer layoutType="sidebar-sticky" slotId="home-sticky-skyscraper" />
+                  <AdContainer
+                    layoutType="sidebar-sticky"
+                    slotId="home-sticky-skyscraper"
+                  />
                 </div>
-
               </aside>
-
             </div>
-
           </div>
         </section>
 
         {/* SECTION 3: PREMIUM INSIDER DISPATCH */}
-        <section id="homepage-newsletter-pitch" className="py-20 bg-slate-900 text-white relative overflow-hidden">
+        <section
+          id="homepage-newsletter-pitch"
+          className="py-20 bg-slate-900 text-white relative overflow-hidden"
+        >
           {/* Neon warm blur background accent representing sunset hue */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-rose-500/20 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
@@ -576,14 +699,18 @@ export default function Page() {
               <Award className="h-3.5 w-3.5" />
               SaaS Insider dispatch
             </span>
-            
+
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
               Get weekly lab dispatch reports. <br />
-              <span className="text-rose-400 italic font-sans">Zero sponsor bias.</span>
+              <span className="text-rose-400 italic font-sans">
+                Zero sponsor bias.
+              </span>
             </h2>
-            
+
             <p className="text-xs text-slate-350 max-w-lg mx-auto leading-relaxed font-sans">
-              Join 12,000+ stack auditors tracking real enterprise license modifications, pricing traps, and sandbox performance records directly.
+              Join 12,000+ stack auditors tracking real enterprise license
+              modifications, pricing traps, and sandbox performance records
+              directly.
             </p>
 
             <div className="pt-4">
@@ -597,7 +724,6 @@ export default function Page() {
             </div>
           </div>
         </section>
-
       </main>
 
       <Footer />

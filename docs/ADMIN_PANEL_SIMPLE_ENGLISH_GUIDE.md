@@ -41,7 +41,7 @@ Open **Manage Tools Index**.
 - **Vertical Category**: Choose the best category for the product. Example: `project-management`.
 - **Starting Monthly price**: Enter only the number. Example: type `15` for `$15/mo`.
 - **One Line Opinion**: Write one short summary sentence about the tool.
-- **Product Brand Icon**: Upload the logo or paste a logo image URL. Use the product’s official brand image when possible.
+- **Product Brand Icon**: Upload the logo to Supabase Storage or paste a public logo image URL. Use the product’s official brand image when possible. If two tools use the same logo, paste the same public URL into both tools.
 
 Where to get the data: product name and price from the pricing page, category from the product’s main use, opinion from your own summary, and logo from the brand page or press kit.
 
