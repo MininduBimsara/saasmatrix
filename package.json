@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "zap:local:ps": "powershell -ExecutionPolicy Bypass -File ./scripts/run-zap.ps1",
     "lint": "eslint .",
     "clean": "next clean"
   },

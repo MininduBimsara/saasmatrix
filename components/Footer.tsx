@@ -95,17 +95,17 @@ export function Footer() {
               </h3>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/privacy" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/privacy" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/terms" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/disclaimers" className="text-xs text-slate-650 hover:text-slate-900 transition-colors flex items-center gap-1 focus:outline-none">
+                  <Link href="/disclaimers" className="text-xs text-slate-650 hover:text-slate-900 transition-colors">
                     Advertiser Disclosure
                   </Link>
                 </li>

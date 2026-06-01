@@ -126,12 +126,6 @@ export default function ComparePage() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/admin"
-                className="inline-flex items-center rounded-full bg-slate-950 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white"
-              >
-                Open Admin
-              </Link>
-              <Link
                 href="/"
                 className="inline-flex items-center rounded-full border border-slate-300 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-700"
               >

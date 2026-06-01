@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, Globe, User } from 'lucide-react';
+import { Menu, X, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export function Header() {
@@ -87,14 +87,6 @@ export function Header() {
             Become an Auditor
           </Link>
 
-          {/* Globe symbol */}
-          <button 
-            type="button"
-            className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-            aria-label="Language selection"
-          >
-            <Globe className="h-4 w-4" />
-          </button>
 
           {/* Airbnb profile pill button */}
           <div className="flex items-center gap-2">
@@ -105,9 +97,9 @@ export function Header() {
               className="flex items-center gap-3 border border-slate-200 hover:shadow-md py-1.5 pl-3 pr-1.5 rounded-full bg-white transition-all cursor-pointer h-10 select-none touch-manipulation"
             >
               <Menu className="h-4 w-4 text-slate-600" />
-              {/* Initials avatar derived from email */}
-              <div className="h-7 w-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold font-mono">
-                MI
+              {/* Decorative aesthetic icon */}
+              <div className="h-7 w-7 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5" />
               </div>
             </button>
           </div>
@@ -118,25 +110,26 @@ export function Header() {
       {/* Mobile Drawer Navigation and Shortcut Panel */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <>
-            {/* Backdrop Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.15 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 top-20 bg-slate-900 z-40"
-            />
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.15 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 top-20 bg-slate-900 z-40"
+          />
+        )}
 
-            {/* Mobile/Tablet dropdown sheet */}
-            <motion.div 
-              id="mobile-navigation-drawer"
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute top-20 right-4 sm:right-8 w-[280px] bg-white border border-slate-100 rounded-3xl shadow-xl z-50 flex flex-col p-4 gap-2 mr-3"
-            >
+        {isMobileMenuOpen && (
+          <motion.div 
+            key="drawer"
+            id="mobile-navigation-drawer"
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute top-20 right-4 sm:right-8 w-[280px] bg-white border border-slate-100 rounded-3xl shadow-xl z-50 flex flex-col p-4 gap-2 mr-3"
+          >
               <div className="flex flex-col py-1 border-b border-slate-100">
                 <Link
                   href="/newsletter"
@@ -179,7 +172,6 @@ export function Header() {
                 SAASROOMS runs an independent software laboratory using certified auditing procedures. No paid referral loops.
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </header>
