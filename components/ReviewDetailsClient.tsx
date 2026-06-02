@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
@@ -24,6 +25,7 @@ interface ReviewDetailsClientProps {
 }
 
 export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetailsClientProps) {
+  const router = useRouter();
   const [review, setReview] = useState<any | null>(staticReview);
   const [toolA, setToolA] = useState<any | null>(null);
   const [toolB, setToolB] = useState<any | null>(null);
@@ -101,14 +103,20 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
             <span className="text-slate-500 font-medium truncate max-w-xs">{review.title}</span>
           </nav>
 
-          <Link 
+          <button 
             id="back-index-link"
-            href="/" 
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-605 transition-colors mb-6"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/');
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-605 transition-colors mb-6 cursor-pointer bg-transparent border-0 p-0 text-left"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Return to B2B Directories
-          </Link>
+          </button>
 
           {/* New Visual Header Section */}
           <section className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200 mb-10 relative overflow-hidden">
@@ -253,14 +261,26 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
                           Feature Suite
                         </th>
                         <th className="p-5 border-r border-slate-700/50 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            {toolA?.iconUrl && <img src={toolA.iconUrl} alt="Tool A" className="h-6 w-6 rounded-md bg-white p-0.5 object-contain" />}
+                          <div className="flex flex-col items-center gap-2.5">
+                            {toolA?.iconUrl ? (
+                              <img src={toolA.iconUrl} alt="Tool A" className="h-12 w-12 rounded-xl bg-white p-1.5 object-contain border border-slate-700/30 shadow-xs" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-xl bg-rose-500 text-white flex items-center justify-center font-mono text-xs font-black uppercase border border-slate-700/30 shadow-xs">
+                                {toolA?.name?.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
                             <span className="font-bold text-white text-xs">{toolA?.name || 'Tool A'}</span>
                           </div>
                         </th>
                         <th className="p-5 border-r border-slate-700/50 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            {toolB?.iconUrl && <img src={toolB.iconUrl} alt="Tool B" className="h-6 w-6 rounded-md bg-white p-0.5 object-contain" />}
+                          <div className="flex flex-col items-center gap-2.5">
+                            {toolB?.iconUrl ? (
+                              <img src={toolB.iconUrl} alt="Tool B" className="h-12 w-12 rounded-xl bg-white p-1.5 object-contain border border-slate-700/30 shadow-xs" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-xl bg-slate-700 text-white flex items-center justify-center font-mono text-xs font-black uppercase border border-slate-700/30 shadow-xs">
+                                {toolB?.name?.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
                             <span className="font-bold text-white text-xs">{toolB?.name || 'Tool B'}</span>
                           </div>
                         </th>
@@ -278,7 +298,7 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
                           <td className="p-5 font-semibold text-slate-800 border-r border-slate-100">{row.feature}</td>
                           <td className="p-5 text-slate-600 text-xs leading-relaxed border-r border-slate-100 text-center">{row.valueA}</td>
                           <td className="p-5 text-slate-600 text-xs leading-relaxed border-r border-slate-100 text-center">{row.valueB}</td>
-                          <td className="p-5 flex justify-center border-b border-transparent">
+                          <td className="p-5 flex justify-center items-center border-b border-transparent">
                             {(() => {
                               const w = row.winner?.toLowerCase() || '';
                               const a = toolA?.name?.toLowerCase() || '';
@@ -286,15 +306,15 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
                               
                               if (a && w.includes(a)) {
                                 return toolA?.iconUrl ? (
-                                  <img src={toolA.iconUrl} alt={toolA.name} className="h-7 w-7 object-contain drop-shadow-sm" />
+                                  <img src={toolA.iconUrl} alt={toolA.name} className="h-10 w-10 rounded-lg bg-white p-1 border border-slate-205 object-contain shadow-xs" />
                                 ) : (
-                                  <div className="h-7 w-7 rounded bg-rose-100 text-rose-500 flex items-center justify-center font-bold text-xs shadow-sm">{toolA?.name?.substring(0,2).toUpperCase()}</div>
+                                  <div className="h-10 w-10 rounded-lg bg-rose-100 text-rose-500 border border-rose-200/50 flex items-center justify-center font-bold text-xs shadow-xs">{toolA?.name?.substring(0,2).toUpperCase()}</div>
                                 );
                               } else if (b && w.includes(b)) {
                                 return toolB?.iconUrl ? (
-                                  <img src={toolB.iconUrl} alt={toolB.name} className="h-7 w-7 object-contain drop-shadow-sm" />
+                                  <img src={toolB.iconUrl} alt={toolB.name} className="h-10 w-10 rounded-lg bg-white p-1 border border-slate-205 object-contain shadow-xs" />
                                 ) : (
-                                  <div className="h-7 w-7 rounded bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs shadow-sm">{toolB?.name?.substring(0,2).toUpperCase()}</div>
+                                  <div className="h-10 w-10 rounded-lg bg-slate-100 text-slate-600 border border-slate-200/50 flex items-center justify-center font-bold text-xs shadow-xs">{toolB?.name?.substring(0,2).toUpperCase()}</div>
                                 );
                               } else {
                                 return (
@@ -321,11 +341,11 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
                 {/* Competitor A Card */}
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3.5 mb-6">
                     {toolA?.iconUrl ? (
-                      <img src={toolA.iconUrl} alt="Tool A" className="h-8 w-8 object-contain" />
+                      <img src={toolA.iconUrl} alt="Tool A" className="h-11 w-11 rounded-xl bg-white p-1 border border-slate-200 object-contain shadow-xs" />
                     ) : (
-                      <div className="h-8 w-8 rounded bg-rose-100 text-rose-500 flex items-center justify-center font-bold">A</div>
+                      <div className="h-11 w-11 rounded-xl bg-rose-100 text-rose-500 border border-rose-200 flex items-center justify-center font-bold text-sm shadow-xs">{toolA?.name?.substring(0, 2).toUpperCase() || 'A'}</div>
                     )}
                     <h3 className="text-sm font-black text-slate-900 tracking-tight">
                       {toolA?.name || 'Tool A'} Strengths
@@ -350,11 +370,11 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
                 {/* Competitor B Card */}
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-slate-900" />
-                  <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-3.5 mb-6">
                     {toolB?.iconUrl ? (
-                      <img src={toolB.iconUrl} alt="Tool B" className="h-8 w-8 object-contain" />
+                      <img src={toolB.iconUrl} alt="Tool B" className="h-11 w-11 rounded-xl bg-white p-1 border border-slate-200 object-contain shadow-xs" />
                     ) : (
-                      <div className="h-8 w-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center font-bold">B</div>
+                      <div className="h-11 w-11 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-bold text-sm shadow-xs">{toolB?.name?.substring(0, 2).toUpperCase() || 'B'}</div>
                     )}
                     <h3 className="text-sm font-black text-slate-900 tracking-tight">
                       {toolB?.name || 'Tool B'} Strengths

@@ -46,7 +46,7 @@ export interface Review {
   category: CategorySlug;
   excerpt: string;
   readTimeMinutes: number;
-  publicationDate: string; // 'YYYY-MM-DD' or typical
+  publicationDate: string; // ISO / UTC timestamp with timezone
   verdict: "editor-pick" | "hot-take" | "skip" | "tie" | null;
   winnerSlug: string | null;
   hotTakeQuote: string;
