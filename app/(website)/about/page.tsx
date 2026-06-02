@@ -1,5 +1,4 @@
-'use client';
-
+﻿import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
@@ -7,6 +6,27 @@ import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
 import { ShieldCheck, Star } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'About | SaaSPebble',
+  description:
+    'How SaaSPebble independently tests and verifies B2B software. Double-blind sandbox methodology, zero commission policy, and GAAP compliance framework.',
+  alternates: { canonical: 'https://saaspebble.tech/about' },
+  openGraph: {
+    title: 'About | SaaSPebble',
+    description:
+      'How SaaSPebble independently tests and verifies B2B software. Double-blind sandbox methodology with zero commission override.',
+    type: 'website',
+    url: 'https://saaspebble.tech/about',
+    siteName: 'SaaSPebble',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About | SaaSPebble',
+    description:
+      'How SaaSPebble independently tests and verifies B2B software.',
+  },
+};
 
 export default function AboutPage() {
   const PRINCIPLES = [

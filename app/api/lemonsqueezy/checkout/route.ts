@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
@@ -15,8 +15,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
 }
 
 const allowedOrigins = [
-  'https://saaspebble.co',
-  'https://www.saaspebble.co',
+  'https://saaspebble.tech',
+  'https://www.saaspebble.tech',
   'http://localhost:3000',
 ];
 
@@ -160,11 +160,11 @@ export async function POST(req: NextRequest) {
     const variantId = process.env[plan.variantEnvKey] ?? '';
     
     if (process.env.NODE_ENV === 'production') {
-      const origin = req.headers.get('origin') ?? 'https://saaspebble.co';
+      const origin = req.headers.get('origin') ?? 'https://saaspebble.tech';
       if (!allowedOrigins.includes(origin)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const origin = req.headers.get('origin') ?? 'https://saaspebble.co';
+    const origin = req.headers.get('origin') ?? 'https://saaspebble.tech';
     const redirectSuccess = successUrl ?? `${origin}/subscribe/success?planId=${planId}&cycle=${billingCycle}`;
 
     if (!apiKey || !storeId || !variantId) {

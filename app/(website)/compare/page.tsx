@@ -146,6 +146,7 @@ export default function ComparePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Heading */}
           <SectionHeading
+            as="h1"
             title="Design Your Own Side-by-Side Comparison Matrix"
             eyebrow="Interactive Workspace"
             emphasized="Comparison"

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { ShieldCheck, Database, KeyRound, AlertTriangle, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -123,7 +123,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               id="admin-username-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin@saaspebble.com"
+              placeholder="admin@saaspebble.tech"
               className="w-full text-sm p-3 border-2 border-slate-200 bg-white rounded-xl focus:border-slate-800 focus:outline-none transition-colors placeholder-slate-400 font-mono"
             />
           </div>

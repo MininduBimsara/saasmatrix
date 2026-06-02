@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -71,7 +71,7 @@ export default function ContactPage() {
                   <Mail className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Editorial Proposals</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">vetting@saaspebble.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">vetting@saaspebble.tech</p>
                   </div>
                 </div>
 
@@ -79,7 +79,7 @@ export default function ContactPage() {
                   <ShieldCheck className="h-4 w-4 text-emerald-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Compliance & AdSense Networks</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">compliance@saaspebble.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">compliance@saaspebble.tech</p>
                   </div>
                 </div>
 

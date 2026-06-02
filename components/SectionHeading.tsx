@@ -7,9 +7,10 @@ export interface SectionHeadingProps {
   eyebrow?: string;
   emphasized?: string;
   meta?: string;
+  as?: 'h1' | 'h2';
 }
 
-export function SectionHeading({ title, eyebrow, emphasized, meta }: SectionHeadingProps) {
+export function SectionHeading({ title, eyebrow, emphasized, meta, as: Tag = 'h2' }: SectionHeadingProps) {
   // Split title manually at the emphasized substring to render it in high-contrast neutral emphasis
   const renderTitle = () => {
     if (!emphasized || !title.toLowerCase().includes(emphasized.toLowerCase())) {
@@ -46,9 +47,9 @@ export function SectionHeading({ title, eyebrow, emphasized, meta }: SectionHead
         )}
         
         {/* Main Heading */}
-        <h2 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-950 uppercase">
+        <Tag className="text-lg md:text-xl font-extrabold tracking-tight text-slate-950 uppercase">
           {renderTitle()}
-        </h2>
+        </Tag>
       </div>
 
       {/* Optional Metadata suffix on the right */}

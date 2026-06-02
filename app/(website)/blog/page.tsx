@@ -90,6 +90,7 @@ export default function BlogIndexPage() {
 
           {/* Section Heading */}
           <SectionHeading
+            as="h1"
             title="The Dispatch: Analytical Essays & Procurement Audits"
             eyebrow="Insider Analysis"
             emphasized="Dispatch"

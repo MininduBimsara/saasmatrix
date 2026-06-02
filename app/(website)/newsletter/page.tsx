@@ -67,10 +67,11 @@ export default function NewsletterPage() {
             <Link href="/" className="hover:text-blue-600">HOME</Link> / THE DISPATCH NEWSLETTER
           </nav>
 
-          <SectionHeading 
-            title="The Insider Dispatch & SaaSPebble Resource Library" 
-            eyebrow="Subscriber Loop" 
-            emphasized="Dispatch" 
+          <SectionHeading
+            as="h1"
+            title="The Insider Dispatch & SaaSPebble Resource Library"
+            eyebrow="Subscriber Loop"
+            emphasized="Dispatch"
           />
 
           {/* Two-Column Pitch and Sign-up row layout */}

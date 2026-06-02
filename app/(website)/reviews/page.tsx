@@ -38,10 +38,11 @@ export default function ReviewsPage() {
           </nav>
 
           {/* Editorial Section Heading */}
-          <SectionHeading 
-            title="Every verified software review matrix on file" 
-            eyebrow="The Full Archive" 
-            emphasized="review" 
+          <SectionHeading
+            as="h1"
+            title="Every verified software review matrix on file"
+            eyebrow="The Full Archive"
+            emphasized="review"
             meta={`${sortedReviews.length} Active Comparisons`}
           />
 

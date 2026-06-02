@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
                 <li>Revoke cookie caching privileges at any point in time.</li>
               </ul>
               <p>
-                To trigger an automated CCPA Do-Not-Sell query or GDPR delete script, please address your legal team coordinates directly to our compliance officer at <span className="font-mono bg-slate-50 border border-slate-150 rounded px-1.5 p-0.5">compliance@saaspebble.co</span>.
+                To trigger an automated CCPA Do-Not-Sell query or GDPR delete script, please address your legal team coordinates directly to our compliance officer at <span className="font-mono bg-slate-50 border border-slate-150 rounded px-1.5 p-0.5">compliance@saaspebble.tech</span>.
               </p>
             </div>
 
