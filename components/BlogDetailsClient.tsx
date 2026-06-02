@@ -141,42 +141,24 @@ export default function BlogDetailsClient({
             className="prose prose-slate prose-sm md:prose-base max-w-prose text-slate-700 leading-relaxed my-8 space-y-5"
           >
             {textBlocks.map((block: string, idx: number) => {
-              // Convert simple markdowns
               const cleanBlock = block.trim();
+              let element;
+
               if (cleanBlock.startsWith("###")) {
-                // Section heading
                 const headingText = cleanBlock.replace("###", "").trim();
-                return (
-                  <div key={idx}>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight mt-6 mb-3">
-                      {headingText}
-                    </h3>
-
-                    {/* Inject AdContainer specifically after the second section heading */}
-                    {idx === 4 && (
-                      <div className="my-6">
-                        <AdContainer
-                          layoutType="inline-content"
-                          slotId={`blog-${post.slug}-inline-ad`}
-                        />
-                      </div>
-                    )}
-                  </div>
+                element = (
+                  <h3 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight mt-6 mb-3">
+                    {headingText}
+                  </h3>
                 );
-              }
-
-              if (
+              } else if (
                 cleanBlock.startsWith("1.") ||
                 cleanBlock.startsWith("2.") ||
                 cleanBlock.startsWith("3.")
               ) {
-                // Numbered lists
                 const items = cleanBlock.split("\n");
-                return (
-                  <ol
-                    key={idx}
-                    className="list-decimal pl-5 space-y-2 my-4 text-sm leading-relaxed text-slate-600"
-                  >
+                element = (
+                  <ol className="list-decimal pl-5 space-y-2 my-4 text-sm leading-relaxed text-slate-600">
                     {items.map((item, idy) => {
                       const text = item.replace(/^\d+\.\s+/, "").trim();
                       const boldMatch = text.match(/^\*\*(.*?)\*\*(.*)/);
@@ -192,33 +174,54 @@ export default function BlogDetailsClient({
                     })}
                   </ol>
                 );
+              } else {
+                let formattedBlock = cleanBlock;
+                const boldRegex = /\*\*(.*?)\*\*/g;
+                const matches = formattedBlock.split(boldRegex);
+
+                element = (
+                  <p className="text-sm md:text-base leading-relaxed text-slate-600 text-justify">
+                    {matches.map((chunk, isOdd) => {
+                      if (isOdd % 2 === 1) {
+                        return (
+                          <strong
+                            key={isOdd}
+                            className="font-extrabold text-slate-900"
+                          >
+                            {chunk}
+                          </strong>
+                        );
+                      }
+                      return chunk;
+                    })}
+                  </p>
+                );
               }
 
-              // Simple bold formatting replacement inside normal paragraphs
-              let formattedBlock = cleanBlock;
-              // Simple regex for bold **phrase**
-              const boldRegex = /\*\*(.*?)\*\*/g;
-              const matches = formattedBlock.split(boldRegex);
-
               return (
-                <p
-                  key={idx}
-                  className="text-sm md:text-base leading-relaxed text-slate-600 text-justify"
-                >
-                  {matches.map((chunk, isOdd) => {
-                    if (isOdd % 2 === 1) {
-                      return (
-                        <strong
-                          key={isOdd}
-                          className="font-extrabold text-slate-900"
-                        >
-                          {chunk}
-                        </strong>
-                      );
-                    }
-                    return chunk;
-                  })}
-                </p>
+                <React.Fragment key={idx}>
+                  {element}
+                  
+                  {/* First inline ad container after 4th block */}
+                  {idx === 4 && (
+                    <div className="my-6">
+                      <AdContainer
+                        layoutType="inline-content"
+                        slotId={`blog-${post.slug}-inline-ad`}
+                      />
+                    </div>
+                  )}
+
+                  {/* Second inline ad container after 8th block in longer posts */}
+                  {idx === 8 && textBlocks.length > 10 && (
+                    <div className="my-6">
+                      <AdContainer
+                        layoutType="inline-content"
+                        slotId={`blog-${post.slug}-inline-ad-2`}
+                      />
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
 
@@ -237,6 +240,14 @@ export default function BlogDetailsClient({
               </p>
             </div>
           </section>
+
+          {/* Bottom AdSense slot */}
+          <div className="my-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId={`blog-${post.slug}-bottom-ad`}
+            />
+          </div>
 
           {/* Simple bottom back link to index */}
           <footer className="border-t border-slate-100 pt-8 mt-12 flex items-center justify-between">

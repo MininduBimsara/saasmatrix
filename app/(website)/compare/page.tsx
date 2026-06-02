@@ -158,10 +158,18 @@ export default function ComparePage() {
             integration hooks, and performance ratings instantly.
           </p>
 
+          {/* Top Banner Advertisement Block */}
+          <div className="mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="compare-top"
+            />
+          </div>
+
           {/* Selector Board row */}
           <section
             id="selector-board"
-            className="bg-slate-50 border border-slate-200/80 p-6 rounded-2xl mb-10"
+            className="bg-slate-50 border border-slate-205/80 p-6 rounded-2xl mb-10"
           >
             {/* Category Filter */}
             <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 pb-6 border-b border-slate-200">

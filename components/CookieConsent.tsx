@@ -33,7 +33,8 @@ export function CookieConsent() {
 
   // Dynamically inject Google AdSense script on consent accept to avoid Next.js's next/script data-nscript warning
   useEffect(() => {
-    if (consent === 'accepted') {
+    const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === 'true';
+    if (adsEnabled && consent === 'accepted') {
       const scriptId = 'adsense-script';
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');

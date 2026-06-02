@@ -99,6 +99,14 @@ export default function CalculatorPage() {
             </p>
           </div>
 
+          {/* Top Banner Advertisement Block */}
+          <div className="max-w-6xl mx-auto mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="calculator-leaderboard-top"
+            />
+          </div>
+
           {!isMounted ? (
             <div className="w-full h-96 animate-pulse bg-slate-100 rounded-xl mb-16" />
           ) : (

@@ -120,6 +120,14 @@ export default function BlogIndexPage() {
             </p>
           </div>
 
+          {/* Top Banner Advertisement Block */}
+          <div className="mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="blog-index-top-banner"
+            />
+          </div>
+
           {/* Vertical Stack Listings */}
           <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white mb-12">
             <div className="divide-y divide-slate-100 animate-fade-in">

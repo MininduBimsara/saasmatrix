@@ -59,6 +59,14 @@ export default function ReviewsPage() {
             </p>
           </div>
 
+          {/* Top Banner Advertisement Block */}
+          <div className="mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="archive-top-advert"
+            />
+          </div>
+
           {/* Archive Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {isLoading ? (

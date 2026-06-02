@@ -203,6 +203,14 @@ export default function AboutPage() {
             </div>
           </section>
 
+          {/* Bottom Banner Advertisement Block */}
+          <div className="mt-8 max-w-4xl mx-auto">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="about-bottom-banner"
+            />
+          </div>
+
         </div>
       </main>
 
