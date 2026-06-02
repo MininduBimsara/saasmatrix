@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { CheckCircle, ArrowRight, ShieldCheck, Mail, ClipboardCheck, Sparkles } from 'lucide-react';
+import { CheckCircle, ArrowRight, ClipboardCheck, Sparkles } from 'lucide-react';
 
 function SandboxSuccessContent() {
   const searchParams = useSearchParams();

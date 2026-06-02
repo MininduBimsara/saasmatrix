@@ -70,9 +70,10 @@ export default function BlogDetailsClient({
     );
   }
 
-  // Parse custom markdown blocks securely on the client
-  const textBlocks = post.contentMarkdown
-    ? post.contentMarkdown.split("\n\n")
+  // Parse custom markdown blocks securely on the client, replacing any literal \n sequences with actual newlines
+  const normalizedMarkdown = (post.contentMarkdown || "").replace(/\\n/g, "\n");
+  const textBlocks = normalizedMarkdown
+    ? normalizedMarkdown.split("\n\n")
     : [];
 
   return (

@@ -10,15 +10,15 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
     redis: Redis.fromEnv(),
     limiter: Ratelimit.slidingWindow(10, '1 m'),
     analytics: false,
-    prefix: 'saasmatrix:checkout',
+    prefix: 'saaspebble:checkout',
   });
 }
 
-const ALLOWED_ORIGINS = [
-  process.env.APP_URL,
-  'https://saasmatrix.co',
-  'https://www.saasmatrix.co',
-].filter(Boolean) as string[];
+const allowedOrigins = [
+  'https://saaspebble.co',
+  'https://www.saaspebble.co',
+  'http://localhost:3000',
+];
 
 const MAX_BODY_BYTES = 4096;
 
@@ -61,7 +61,7 @@ async function enforceRateLimit(req: NextRequest): Promise<NextResponse | null> 
 function validateRequestHeaders(req: NextRequest): NextResponse | null {
   const origin = req.headers.get('origin') ?? '';
   const isAllowed =
-    ALLOWED_ORIGINS.includes(origin) ||
+    allowedOrigins.includes(origin) ||
     (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost'));
   if (!isAllowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -158,7 +158,13 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
     const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
     const variantId = process.env[plan.variantEnvKey] ?? '';
-    const origin = req.headers.get('origin') ?? 'https://saasmatrix.co';
+    
+    if (process.env.NODE_ENV === 'production') {
+      const origin = req.headers.get('origin') ?? 'https://saaspebble.co';
+      if (!allowedOrigins.includes(origin)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    const origin = req.headers.get('origin') ?? 'https://saaspebble.co';
     const redirectSuccess = successUrl ?? `${origin}/subscribe/success?planId=${planId}&cycle=${billingCycle}`;
 
     if (!apiKey || !storeId || !variantId) {

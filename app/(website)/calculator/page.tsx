@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
-import { SectionHeading } from '@/components/SectionHeading';
-import { HelpCircle, ChevronRight, TrendingUp, AlertCircle, Check, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function CalculatorPage() {
   const [hoursSaved, setHoursSaved] = useState<number>(5);
   const [hourlyRate, setHourlyRate] = useState<number>(45);
   const [seatCost, setSeatCost] = useState<number>(12);
   const [teamSize, setTeamSize] = useState<number>(8);
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   // Recompute full economic analysis when variables change
   const report = useMemo(() => {
@@ -94,160 +99,164 @@ export default function CalculatorPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start mb-16">
-            
-            {/* Left Column: Sliders Controllers (7 / 12 width) */}
-            <div className="lg:col-span-7 space-y-6">
+          {!isMounted ? (
+            <div className="w-full h-96 animate-pulse bg-slate-100 rounded-xl mb-16" />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start mb-16">
               
-              {/* Slider 1: Hours saved per week */}
-              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-bold text-slate-900">Hours Saved Per Week (Team Avg)</span>
-                  <span className="text-2xl font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl">{hoursSaved} <span className="text-xs text-rose-400 uppercase tracking-widest ml-0.5">hrs</span></span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="40"
-                  value={hoursSaved}
-                  onChange={(e) => setHoursSaved(Number(e.target.value))}
-                  className="w-full accent-rose-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
-                  <span>1 HR</span>
-                  <span>40 HRS</span>
-                </div>
-              </div>
-
-              {/* Slider 2: Average Hourly Rate */}
-              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-bold text-slate-900">Average Blended Hourly Rate</span>
-                  <span className="text-2xl font-black text-blue-500 bg-blue-50 px-3 py-1 rounded-xl"><span className="text-xs text-blue-400 mr-0.5">$</span>{hourlyRate}<span className="text-xs text-blue-400 uppercase tracking-widest ml-0.5">/hr</span></span>
-                </div>
-                <input
-                  type="range"
-                  min="15"
-                  max="150"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className="w-full accent-blue-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
-                  <span>$15/HR</span>
-                  <span>$150/HR</span>
-                </div>
-              </div>
-
-              {/* Slider 3: Starting Seat Fee */}
-              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-bold text-slate-900">Tool Monthly Cost Per Seat</span>
-                  <span className="text-2xl font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-xl"><span className="text-xs text-amber-400 mr-0.5">$</span>{seatCost}<span className="text-xs text-amber-400 uppercase tracking-widest ml-0.5">/mo</span></span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="120"
-                  value={seatCost}
-                  onChange={(e) => setSeatCost(Number(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
-                  <span>$5</span>
-                  <span>$120</span>
-                </div>
-              </div>
-
-              {/* Slider 4: Team size */}
-              <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-bold text-slate-900">Active Team Seats Count</span>
-                  <span className="text-2xl font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-xl">{teamSize} <span className="text-xs text-emerald-400 uppercase tracking-widest ml-0.5">seats</span></span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={teamSize}
-                  onChange={(e) => setTeamSize(Number(e.target.value))}
-                  className="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
-                  <span>1 SEAT</span>
-                  <span>100 SEATS</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: Outcomes in dark theme layout (5 / 12 width) */}
-            <div className="lg:col-span-5 relative">
-              <div className="sticky top-28 bg-slate-900 text-white p-8 rounded-[32px] border border-slate-800 shadow-2xl flex flex-col gap-8">
+              {/* Left Column: Sliders Controllers (7 / 12 width) */}
+              <div className="lg:col-span-7 space-y-6">
                 
-                {/* Output Header with dynamic verdict */}
-                <div>
-                  <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 block mb-3 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    Decision Verdict
-                  </span>
-                  
-                  <div className={`p-5 rounded-2xl border ${verdict.bg}`}>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs uppercase font-extrabold tracking-wider">Estimated Outlook:</span>
-                      <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full ${verdict.badge}`}>
-                        {verdict.label}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium leading-relaxed">
-                      {verdict.summary}
-                    </p>
+                {/* Slider 1: Hours saved per week */}
+                <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-bold text-slate-900">Hours Saved Per Week (Team Avg)</span>
+                    <span className="text-2xl font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl">{hoursSaved} <span className="text-xs text-rose-400 uppercase tracking-widest ml-0.5">hrs</span></span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="40"
+                    value={hoursSaved}
+                    onChange={(e) => setHoursSaved(Number(e.target.value))}
+                    className="w-full accent-rose-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
+                    <span>1 HR</span>
+                    <span>40 HRS</span>
                   </div>
                 </div>
 
-                {/* Key calculated yields and variables */}
-                <div className="space-y-6">
-                  
-                  {/* Monthly cost */}
-                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
-                    <span className="text-sm text-slate-400 font-medium">Monthly Licensing Cost:</span>
-                    <span className="text-xl font-bold font-mono text-white">${report.monthlyCost}</span>
+                {/* Slider 2: Average Hourly Rate */}
+                <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-bold text-slate-900">Average Blended Hourly Rate</span>
+                    <span className="text-2xl font-black text-blue-500 bg-blue-50 px-3 py-1 rounded-xl"><span className="text-xs text-blue-400 mr-0.5">$</span>{hourlyRate}<span className="text-xs text-blue-400 uppercase tracking-widest ml-0.5">/hr</span></span>
                   </div>
-
-                  {/* Value created */}
-                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
-                    <span className="text-sm text-slate-400 font-medium">Monthly Time Value:</span>
-                    <span className="text-xl font-bold font-mono text-blue-400">${report.monthlyValue}</span>
+                  <input
+                    type="range"
+                    min="15"
+                    max="150"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(Number(e.target.value))}
+                    className="w-full accent-blue-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
+                    <span>$15/HR</span>
+                    <span>$150/HR</span>
                   </div>
-
-                  {/* Net Benefit */}
-                  <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
-                    <span className="text-sm text-slate-400 font-medium">Net Monthly Profit:</span>
-                    <span className="text-2xl font-black font-mono text-emerald-400">${report.netBenefit}</span>
-                  </div>
-
-                  {/* ROI % & Payback */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-                      <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">ROI Yield</span>
-                      <span className="text-2xl font-black font-mono text-amber-400">{report.roiPercentage}%</span>
-                    </div>
-                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-                      <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Break-Even</span>
-                      <span className="text-2xl font-black font-mono text-white">{report.paybackDays} <span className="text-xs text-slate-400">days</span></span>
-                    </div>
-                  </div>
-
                 </div>
 
-                <div className="text-[10px] text-slate-500 font-medium text-center leading-normal">
-                  *Values are estimated assuming 4.33 weeks per calendar month.
+                {/* Slider 3: Starting Seat Fee */}
+                <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-bold text-slate-900">Tool Monthly Cost Per Seat</span>
+                    <span className="text-2xl font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-xl"><span className="text-xs text-amber-400 mr-0.5">$</span>{seatCost}<span className="text-xs text-amber-400 uppercase tracking-widest ml-0.5">/mo</span></span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="120"
+                    value={seatCost}
+                    onChange={(e) => setSeatCost(Number(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
+                    <span>$5</span>
+                    <span>$120</span>
+                  </div>
+                </div>
+
+                {/* Slider 4: Team size */}
+                <div className="bg-white border border-slate-200/80 p-6 rounded-[24px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm font-bold text-slate-900">Active Team Seats Count</span>
+                    <span className="text-2xl font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-xl">{teamSize} <span className="text-xs text-emerald-400 uppercase tracking-widest ml-0.5">seats</span></span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={teamSize}
+                    onChange={(e) => setTeamSize(Number(e.target.value))}
+                    className="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-extrabold uppercase mt-3">
+                    <span>1 SEAT</span>
+                    <span>100 SEATS</span>
+                  </div>
                 </div>
 
               </div>
-            </div>
 
-          </div>
+              {/* Right Column: Outcomes in dark theme layout (5 / 12 width) */}
+              <div className="lg:col-span-5 relative">
+                <div className="sticky top-28 bg-slate-900 text-white p-8 rounded-[32px] border border-slate-800 shadow-2xl flex flex-col gap-8">
+                  
+                  {/* Output Header with dynamic verdict */}
+                  <div>
+                    <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 block mb-3 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Decision Verdict
+                    </span>
+                    
+                    <div className={`p-5 rounded-2xl border ${verdict.bg}`}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs uppercase font-extrabold tracking-wider">Estimated Outlook:</span>
+                        <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1 rounded-full ${verdict.badge}`}>
+                          {verdict.label}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium leading-relaxed">
+                        {verdict.summary}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Key calculated yields and variables */}
+                  <div className="space-y-6">
+                    
+                    {/* Monthly cost */}
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                      <span className="text-sm text-slate-400 font-medium">Monthly Licensing Cost:</span>
+                      <span className="text-xl font-bold font-mono text-white">${report.monthlyCost}</span>
+                    </div>
+
+                    {/* Value created */}
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                      <span className="text-sm text-slate-400 font-medium">Monthly Time Value:</span>
+                      <span className="text-xl font-bold font-mono text-blue-400">${report.monthlyValue}</span>
+                    </div>
+
+                    {/* Net Benefit */}
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-800/80">
+                      <span className="text-sm text-slate-400 font-medium">Net Monthly Profit:</span>
+                      <span className="text-2xl font-black font-mono text-emerald-400">${report.netBenefit}</span>
+                    </div>
+
+                    {/* ROI % & Payback */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                        <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">ROI Yield</span>
+                        <span className="text-2xl font-black font-mono text-amber-400">{report.roiPercentage}%</span>
+                      </div>
+                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                        <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Break-Even</span>
+                        <span className="text-2xl font-black font-mono text-white">{report.paybackDays} <span className="text-xs text-slate-400">days</span></span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="text-[10px] text-slate-500 font-medium text-center leading-normal">
+                    *Values are estimated assuming 4.33 weeks per calendar month.
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          )}
 
           {/* Bottom Card calling list with payback indexes */}
           <section id="payback-index-cta" className="bg-white border border-slate-200/80 shadow-sm py-8 px-8 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-6 max-w-4xl mx-auto mb-16">

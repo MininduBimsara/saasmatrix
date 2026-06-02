@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Search, Sparkles } from 'lucide-react';
+import { Menu, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export function Header() {
@@ -49,7 +49,7 @@ export function Header() {
             className="flex items-center gap-1 focus:outline-none"
           >
             <span className="font-sans font-black text-xl md:text-2xl tracking-tight text-rose-500">
-              SaaS<span className="text-slate-900 font-bold">Rooms</span>
+              SaaS<span className="text-slate-900 font-bold">Pebble</span>
             </span>
             <span className="h-2 w-2 rounded-full bg-rose-500 block animate-pulse mt-1" />
           </Link>
@@ -186,7 +186,7 @@ export function Header() {
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-3.5 mt-1 border border-slate-100 text-[10px] leading-relaxed text-slate-400">
-                SAASROOMS runs an independent software laboratory using certified auditing procedures. No paid referral loops.
+                SAASPEBBLE runs an independent software laboratory using certified auditing procedures. No paid referral loops.
               </div>
             </motion.div>
         )}

@@ -16,7 +16,7 @@ function getStorageItem<T>(key: string, defaultValue: T): T {
     let raw = globalThis.window.localStorage.getItem(key);
     // Backward compatibility automatic brand migration
     if (!raw) {
-      const oldKey = key.replace("saasrooms_", "saasmatrix_");
+      const oldKey = key.replace("saasrooms_", "saaspebble_");
       raw = globalThis.window.localStorage.getItem(oldKey);
       if (raw) {
         // Migrate to new key instantly

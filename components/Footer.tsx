@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Check, Shield, AlertCircle, FileText, Send } from 'lucide-react';
 
 export function Footer() {
   const [formData, setFormData] = useState({
@@ -45,12 +44,12 @@ export function Footer() {
                 className="flex items-center gap-1 focus:outline-none mb-6"
               >
                 <span className="font-sans font-black text-2xl tracking-tight text-rose-500">
-                  SaaS<span className="text-slate-900 font-bold">Rooms</span>
+                  SaaS<span className="text-slate-900 font-bold">Pebble</span>
                 </span>
                 <span className="h-2 w-2 rounded-full bg-rose-500 block animate-pulse mt-1" />
               </Link>
               <p className="text-xs text-slate-500 leading-relaxed max-w-sm mb-4">
-                SaaSRooms is the leading B2B catalog dashboard and performance index delivering independent SaaS evaluations and structural side-by-side matrices. Designed for maximum load efficiency and clear choice frameworks.
+                SaaSPebble is the leading B2B catalog dashboard and performance index delivering independent SaaS evaluations and structural side-by-side matrices. Designed for maximum load efficiency and clear choice frameworks.
               </p>
             </div>
             {/* Direct compliance badge info */}
@@ -220,7 +219,7 @@ export function Footer() {
         {/* Outer Bottom Strip */}
         <div className="mt-12 pt-8 border-t border-slate-200/60 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} SaaSRooms Directory Network Inc. All rights reserved.
+            &copy; {new Date().getFullYear()} SaaSPebble Directory Network Inc. All rights reserved.
           </p>
           
           <div className="flex gap-6">

@@ -254,6 +254,11 @@ export default function AdminPage() {
     contentMarkdown: "",
   });
 
+  // Edit mode trackers
+  const [editingToolSlug, setEditingToolSlug] = useState<string | null>(null);
+  const [editingReviewSlug, setEditingReviewSlug] = useState<string | null>(null);
+  const [editingBlogSlug, setEditingBlogSlug] = useState<string | null>(null);
+
   const [bulkBlogDraftJson, setBulkBlogDraftJson] = useState<string>(`[
   {
     "title": "Why seat-based pricing is collapsing",
@@ -388,7 +393,7 @@ export default function AdminPage() {
       if (!active) return;
 
       channel = supabase
-        .channel("realtime_saasrooms_changes")
+        .channel("realtime_saaspebble_changes")
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "saas_tools" },
@@ -523,14 +528,14 @@ export default function AdminPage() {
     };
   }, [isAuthenticated, supabaseActive]);
 
-  // Handle timeout clear for the notification banner
   useEffect(() => {
-    if (realtimeNotification) {
-      const timer = setTimeout(() => {
-        setRealtimeNotification(null);
-      }, 6000);
-      return () => clearTimeout(timer);
+    if (!realtimeNotification) {
+      return () => {};
     }
+    const timer = setTimeout(() => {
+      setRealtimeNotification(null);
+    }, 6000);
+    return () => clearTimeout(timer);
   }, [realtimeNotification]);
 
   useEffect(() => {
@@ -710,40 +715,29 @@ export default function AdminPage() {
     const toolToSave = formStateToTool(toolForm);
 
     const db = await import("@/lib/clientDb");
+
+    // Clean up old slug if it was renamed during edit
+    if (editingToolSlug && editingToolSlug !== toolToSave.slug) {
+      db.deleteCustomTool(editingToolSlug);
+      if (supabaseActive) {
+        await deleteSupabaseRow("saas_tools", editingToolSlug);
+      }
+    }
+
     db.saveCustomTool(toolToSave);
     logAdminAction({
-      action: "create",
+      action: editingToolSlug ? "update" : "create",
       entity: "tool",
-      entitySlug: toolForm.slug,
-      details: { name: toolForm.name },
+      entitySlug: toolToSave.slug,
+      details: { name: toolToSave.name },
     });
     await pushBatchToCloud("tool", [toolToSave]);
 
     triggerSuccessAlert(
-      `Tool "${toolForm.name}" compiled and saved into the index database!`,
+      `Tool "${toolToSave.name}" compiled and saved into the index database!`,
     );
 
-    // Clear Form
-    setToolForm({
-      slug: "",
-      name: "",
-      startingPrice: "$15/mo",
-      numericPrice: 15,
-      category: "project-management",
-      oneLineOpinion: "",
-      parentSlug: "",
-      tierName: "",
-      pricingModel: "",
-      keyFeatures: "",
-      limitations: "",
-      aiIncluded: false,
-      aiCost: "",
-      freeTrial: false,
-      freeForever: false,
-      iconUrl: "",
-      publicationDate: getDefaultLocalDateTime(),
-    });
-
+    clearToolForm();
     loadDatabase();
   };
 
@@ -812,36 +806,27 @@ export default function AdminPage() {
     };
 
     const db = await import("@/lib/clientDb");
+
+    // Clean up old slug if it was renamed during edit
+    if (editingReviewSlug && editingReviewSlug !== completeReview.slug) {
+      db.deleteCustomReview(editingReviewSlug);
+      if (supabaseActive) {
+        await deleteSupabaseRow("saas_reviews", editingReviewSlug);
+      }
+    }
+
     db.saveCustomReview(completeReview);
     logAdminAction({
-      action: "create",
+      action: editingReviewSlug ? "update" : "create",
       entity: "review",
-      entitySlug: reviewForm.slug,
-      details: { title: reviewForm.title },
+      entitySlug: completeReview.slug,
+      details: { title: completeReview.title },
     });
     await pushBatchToCloud("review", [completeReview]);
 
-    triggerSuccessAlert(`Review matrix "${reviewForm.title}" synchronized!`);
+    triggerSuccessAlert(`Review matrix "${completeReview.title}" synchronized!`);
 
-    // Clear
-    setReviewForm({
-      slug: "",
-      title: "",
-      toolA: toolsList[0]?.slug || "",
-      toolB: toolsList[1]?.slug || "",
-      category: "project-management",
-      excerpt: "",
-      readTimeMinutes: 5,
-      publicationDate: new Date().toISOString().split("T")[0],
-      verdict: "editor-pick",
-      winnerSlug: toolsList[0]?.slug || "",
-      hotTakeQuote: "",
-      finalVerdictParagraph: "",
-      bestForA: "",
-      bestForB: "",
-    });
-    setCustomTableRows([]);
-
+    clearReviewForm();
     loadDatabase();
   };
 
@@ -861,9 +846,18 @@ export default function AdminPage() {
     if (!blogForm.slug || !blogForm.title) return;
 
     const db = await import("@/lib/clientDb");
+
+    // Clean up old slug if it was renamed during edit
+    if (editingBlogSlug && editingBlogSlug !== blogForm.slug) {
+      db.deleteCustomBlogPost(editingBlogSlug);
+      if (supabaseActive) {
+        await deleteSupabaseRow("saas_blog_posts", editingBlogSlug);
+      }
+    }
+
     db.saveCustomBlogPost(blogForm);
     logAdminAction({
-      action: "create",
+      action: editingBlogSlug ? "update" : "create",
       entity: "blog_post",
       entitySlug: blogForm.slug,
       details: { title: blogForm.title, issueNumber: blogForm.issueNumber },
@@ -874,22 +868,7 @@ export default function AdminPage() {
       `BlogPost essay Issue #${blogForm.issueNumber} successfully published!`,
     );
 
-    // Clear
-    setBlogForm({
-      slug: "",
-      title: "",
-      issueNumber: blogsList.length + 43,
-      excerpt: "",
-      readTime: "6 min read",
-      publicationDate: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      category: "Procurement Strategy",
-      contentMarkdown: "",
-    });
-
+    clearBlogForm();
     loadDatabase();
   };
 
@@ -1274,7 +1253,7 @@ export default function AdminPage() {
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute(
       "download",
-      "saasrooms_complete_database_backup.json",
+      "saaspebble_complete_database_backup.json",
     );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
@@ -1334,9 +1313,72 @@ export default function AdminPage() {
     return getPublishedBlogPosts(blogsList).length;
   }, [blogsList]);
 
+  const clearToolForm = () => {
+    setToolForm({
+      slug: "",
+      name: "",
+      startingPrice: "$15/mo",
+      numericPrice: 15,
+      category: "project-management",
+      oneLineOpinion: "",
+      parentSlug: "",
+      tierName: "",
+      pricingModel: "",
+      keyFeatures: "",
+      limitations: "",
+      aiIncluded: false,
+      aiCost: "",
+      freeTrial: false,
+      freeForever: false,
+      iconUrl: "",
+      publicationDate: getDefaultLocalDateTime(),
+    });
+    setEditingToolSlug(null);
+  };
+
+  const clearReviewForm = () => {
+    setReviewForm({
+      slug: "",
+      title: "",
+      toolA: toolsList[0]?.slug || "",
+      toolB: toolsList[1]?.slug || "",
+      category: "project-management",
+      excerpt: "",
+      readTimeMinutes: 5,
+      publicationDate: new Date().toISOString().split("T")[0],
+      verdict: "editor-pick",
+      winnerSlug: toolsList[0]?.slug || "",
+      hotTakeQuote: "",
+      finalVerdictParagraph: "",
+      bestForA: "",
+      bestForB: "",
+    });
+    setCustomTableRows([]);
+    setEditingReviewSlug(null);
+  };
+
+  const clearBlogForm = () => {
+    setBlogForm({
+      slug: "",
+      title: "",
+      issueNumber: blogsList.length + 43,
+      excerpt: "",
+      readTime: "6 min read",
+      publicationDate: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      category: "Procurement Strategy",
+      contentMarkdown: "",
+    });
+    setEditingBlogSlug(null);
+  };
+
   // Auto-fill form values on click triggers to ease editing tasks
   const editToolInForm = (tool: Tool) => {
     setToolForm(toolToFormState(tool));
+    setEditingToolSlug(tool.slug);
     setActiveTab("tools");
   };
 
@@ -1358,11 +1400,13 @@ export default function AdminPage() {
       bestForB: review.bestForB,
     });
     setCustomTableRows(review.tableRows || []);
+    setEditingReviewSlug(review.slug);
     setActiveTab("reviews");
   };
 
   const editBlogInForm = (blog: BlogPost) => {
     setBlogForm(blog);
+    setEditingBlogSlug(blog.slug);
     setActiveTab("blog");
   };
 
@@ -1395,7 +1439,7 @@ export default function AdminPage() {
                 Administrative Command Panel
               </span>
               <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight leading-none">
-                SaaSRooms Workspace
+                SaaSPebble Workspace
               </h1>
               <p className="text-xs text-slate-500 mt-1.5 max-w-xl">
                 Add reviews, create tools, draft markdown blog dispatches, and
@@ -1725,8 +1769,13 @@ export default function AdminPage() {
                     onSubmit={handleSaveTool}
                     className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
                   >
-                    <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-wide">
-                      Add / Edit Tool Entry
+                    <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-wide flex justify-between items-center">
+                      <span>{editingToolSlug ? `Edit Tool: ${editingToolSlug}` : "Add New Tool Entry"}</span>
+                      {editingToolSlug && (
+                        <span className="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+                          Edit Mode
+                        </span>
+                      )}
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2206,13 +2255,24 @@ export default function AdminPage() {
                     </div>
 
                     {/* Action button */}
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2 px-4 rounded-lg cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Sync Tool Entry</span>
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2 px-4 rounded-lg cursor-pointer"
+                      >
+                        {editingToolSlug ? <RefreshCw className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                        <span>{editingToolSlug ? "Update Tool Entry" : "Sync Tool Entry"}</span>
+                      </button>
+                      {editingToolSlug && (
+                        <button
+                          type="button"
+                          onClick={clearToolForm}
+                          className="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-400 text-slate-700 font-bold py-2 px-4 rounded-lg cursor-pointer"
+                        >
+                          <span>Cancel Edit / New</span>
+                        </button>
+                      )}
+                    </div>
                   </form>
 
                   {/* List existing */}
@@ -2327,8 +2387,13 @@ export default function AdminPage() {
                     onSubmit={handleSaveReview}
                     className="space-y-6 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
                   >
-                    <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-widest leading-none">
-                      Dynamic Reviews Matrix Builder
+                    <h3 className="font-bold text-slate-800 pb-2 border-b border-slate-150 uppercase tracking-wide flex justify-between items-center">
+                      <span>{editingReviewSlug ? `Edit Review Matrix: ${editingReviewSlug}` : "Dynamic Reviews Matrix Builder"}</span>
+                      {editingReviewSlug && (
+                        <span className="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+                          Edit Mode
+                        </span>
+                      )}
                     </h3>
 
                     {/* Metadata specs */}
@@ -2747,13 +2812,24 @@ export default function AdminPage() {
                     </div>
 
                     {/* Submit Review Button */}
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-5 rounded-lg cursor-pointer"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Compile Complete Review Matrix</span>
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-5 rounded-lg cursor-pointer"
+                      >
+                        {editingReviewSlug ? <RefreshCw className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        <span>{editingReviewSlug ? "Update Review Matrix" : "Compile Complete Review Matrix"}</span>
+                      </button>
+                      {editingReviewSlug && (
+                        <button
+                          type="button"
+                          onClick={clearReviewForm}
+                          className="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-400 text-slate-700 font-bold py-2.5 px-5 rounded-lg cursor-pointer"
+                        >
+                          <span>Cancel Edit / New</span>
+                        </button>
+                      )}
+                    </div>
                   </form>
 
                   {/* List active comparison sheets */}
@@ -2883,85 +2959,17 @@ export default function AdminPage() {
                   </div>
 
                   <form
-                    onSubmit={handleSaveBulkBlogQueue}
-                    className="space-y-4 bg-blue-50/40 p-4 border border-blue-100 rounded-xl text-xs"
-                  >
-                    <div className="flex justify-between items-center pb-2 border-b border-blue-100">
-                      <h3 className="font-bold text-slate-900 uppercase tracking-wider">
-                        Weekly Bulk Scheduler
-                      </h3>
-                      <span className="text-[10px] font-mono text-slate-500">
-                        Paste JSON drafts and the system spaces them every 10
-                        hours.
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1 md:col-span-2">
-                        <label className="block font-bold text-slate-700">
-                          Batch start date/time
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={bulkBlogStartAt}
-                          onChange={(e) => setBulkBlogStartAt(e.target.value)}
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="block font-bold text-slate-700">
-                          Hours between posts
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={bulkBlogIntervalHours}
-                          onChange={(e) =>
-                            setBulkBlogIntervalHours(
-                              Number(e.target.value) ||
-                                DEFAULT_BLOG_QUEUE_INTERVAL_HOURS,
-                            )
-                          }
-                          className="w-full p-2 border border-slate-200 bg-white rounded-lg"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block font-bold text-slate-700">
-                        Bulk article payload
-                      </label>
-                      <textarea
-                        rows={10}
-                        value={bulkBlogDraftJson}
-                        onChange={(e) => setBulkBlogDraftJson(e.target.value)}
-                        className="w-full p-3 border border-slate-200 bg-white rounded-lg font-mono text-[11px] leading-relaxed"
-                        placeholder='[{"title":"...","excerpt":"...","category":"...","readTime":"5 min read","contentMarkdown":"..."}]'
-                      />
-                      <p className="text-[10px] text-slate-500">
-                        Each object needs `title`, `excerpt`, `category`, and
-                        `contentMarkdown`. Optional `slug`, `readTime`, and
-                        `issueNumber` are supported.
-                      </p>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
-                    >
-                      <CloudUpload className="h-3.5 w-3.5" />
-                      <span>Queue Weekly Batch</span>
-                    </button>
-                  </form>
-
-                  <form
                     onSubmit={handleSaveBlog}
                     className="space-y-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs"
                   >
                     <div className="flex justify-between items-center pb-2 border-b border-slate-150">
-                      <h3 className="font-bold text-slate-804 uppercase tracking-wider">
-                        The Dispatch Markdown Editor
+                      <h3 className="font-bold text-slate-804 uppercase tracking-wider flex items-center gap-2">
+                        <span>{editingBlogSlug ? `Editing Essay: ${editingBlogSlug}` : "The Dispatch Markdown Editor"}</span>
+                        {editingBlogSlug && (
+                          <span className="text-[10px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+                            Edit Mode
+                          </span>
+                        )}
                       </h3>
 
                       <button
@@ -2995,7 +3003,7 @@ export default function AdminPage() {
                         </p>
 
                         <div className="text-slate-700 leading-relaxed text-xs space-y-4 whitespace-pre-wrap font-sans mt-5">
-                          {blogForm.contentMarkdown ||
+                          {(blogForm.contentMarkdown || "").replace(/\\n/g, "\n") ||
                             "Compose interesting procurement guidelines... Supports standard line breaks."}
                         </div>
                       </div>
@@ -3175,13 +3183,24 @@ export default function AdminPage() {
 
                     {/* Submit Blog post */}
                     {!blogPreviewMode && (
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>Sync and Publish Dispatch Issue</span>
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                        >
+                          {editingBlogSlug ? <RefreshCw className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                          <span>{editingBlogSlug ? "Update and Publish Dispatch Issue" : "Sync and Publish Dispatch Issue"}</span>
+                        </button>
+                        {editingBlogSlug && (
+                          <button
+                            type="button"
+                            onClick={clearBlogForm}
+                            className="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-400 text-slate-700 font-bold py-2.5 px-4 rounded-lg cursor-pointer"
+                          >
+                            <span>Cancel Edit / New</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </form>
 
@@ -3920,7 +3939,7 @@ export default function AdminPage() {
                         Supabase Sync Architecture
                       </h3>
                       <p className="text-slate-600 leading-normal">
-                        SaasMatrix utilizes local-first client database
+                        SaaSPebble utilizes local-first client database
                         optimizations (localStorage overlays) to support static
                         build exports (CLS = 0). This Sync Center serves as your
                         content gateway: publish articles and reviews locally in

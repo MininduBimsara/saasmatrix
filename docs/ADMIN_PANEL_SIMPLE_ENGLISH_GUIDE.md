@@ -15,8 +15,9 @@ After login, you will see these tabs:
 - Manage Review Matrices
 - Dispatch Post Editor
 - Database Sync Setup
+- Content Pipeline
 
-The dashboard tab shows counts and status. The other tabs are where you add content.
+The dashboard tab shows counts and status. The other tabs are where you add and manage content.
 
 ## What The Website Does
 
@@ -102,6 +103,18 @@ Open **Database Sync Setup** when you want to connect browser edits to Supabase.
 - **Pull Cloud database into Local Storage**: Brings the cloud data back into the browser.
 
 Use push after you finish editing locally. Use pull when the cloud data is newer or when you want to refresh the browser.
+
+## Use The Content Pipeline Tab
+
+Open **Content Pipeline** to queue and schedule a batch of content for staggered, automatic publishing. This tab contains three sub-sections for each content type: **Blogs**, **Reviews**, and **Tools**.
+
+- **Batch Start Date/Time**: Select the date and time when the first item of the queue should go live.
+- **Hours Between Drops**: Enter the time offset (e.g., 10 hours) to stagger each successive post.
+- **Payload Box**: Paste a JSON array of items (a pre-filled template is provided inside the payload box for each type).
+- **Stagger and Queue Batch**: Parses the JSON array, schedules each item with an offset publish timestamp, saves it locally, and automatically pushes it to Supabase so it goes live for visitors at the scheduled time.
+- **Reschedule**: Allows you to re-space the publication cadence of all scheduled items currently in the pipeline.
+
+Use the Content Pipeline when you want to preload content in bulk to automatically drip-feed over days or weeks.
 
 ## Final Tips
 

@@ -10,7 +10,7 @@ export interface ReviewCardProps {
   theme?: 'swiss' | 'editorial' | 'cyber' | 'bento' | 'brutalist';
 }
 
-export function ReviewCard({ review, variant = 'default', theme = 'swiss' }: ReviewCardProps) {
+export function ReviewCard({ review, variant: _variant = 'default', theme: _theme = 'swiss' }: ReviewCardProps) {
   const [toolA, setToolA] = React.useState<any>(null);
   const [toolB, setToolB] = React.useState<any>(null);
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { CheckCircle2, ArrowRight, ShieldCheck, Check, Sparkles, BookOpen } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 
 function RealSuccessContent() {
   const searchParams = useSearchParams();

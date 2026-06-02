@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Clock, ArrowRight, ArrowLeftRight } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
 
 interface ReviewCardSkeletonProps {
   variant?: 'default' | 'featured' | 'cobalt' | 'mint' | 'dark';
@@ -116,7 +116,7 @@ interface TableSkeletonProps {
  * A premium database/table-style skeleton loader.
  * Mimics high-density index lists and evaluation matrices securely with zero CLS.
  */
-export function TableSkeleton({ rowsCount = 4, columnsCount = 3, theme = 'silver' }: TableSkeletonProps) {
+export function TableSkeleton({ rowsCount = 4, columnsCount: _columnsCount = 3, theme = 'silver' }: TableSkeletonProps) {
   const isAmber = theme === 'amber';
   const isSlate = theme === 'slate';
 

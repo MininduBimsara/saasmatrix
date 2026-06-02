@@ -10,11 +10,9 @@ import {
   ArrowLeft, 
   Star, 
   ChevronRight, 
-  Info, 
   Award,
   Zap,
   ShieldCheck,
-  X,
   TrendingUp,
   Activity,
   Layers
