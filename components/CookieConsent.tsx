@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Script from 'next/script';
 import { Cookie, Settings, ExternalLink, HelpCircle } from 'lucide-react';
 
 export function CookieConsent() {
@@ -31,6 +30,21 @@ export function CookieConsent() {
       clearTimer();
     };
   }, []);
+
+  // Dynamically inject Google AdSense script on consent accept to avoid Next.js's next/script data-nscript warning
+  useEffect(() => {
+    if (consent === 'accepted') {
+      const scriptId = 'adsense-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-partner-id";
+        script.async = true;
+        script.crossOrigin = "anonymous";
+        document.head.appendChild(script);
+      }
+    }
+  }, [consent]);
 
   const startTimer = () => {
     clearTimer();
@@ -74,16 +88,9 @@ export function CookieConsent() {
   // Prevent rendering on the server to avoid hydration mismatches
   if (!mounted) return null;
 
-  // If consent is already accepted, render the Google AdSense script
+  // If consent is already accepted, we inject the script dynamically in useEffect and render nothing
   if (consent === 'accepted') {
-    return (
-      <Script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-partner-id"
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
-    );
+    return null;
   }
 
   return (
