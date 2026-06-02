@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, Database, KeyRound, AlertTriangle, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { isSupabaseConfigured, getSupabaseClient } from '@/lib/supabase';
 

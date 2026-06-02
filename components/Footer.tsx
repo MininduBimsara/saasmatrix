@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Check, Shield, AlertCircle, FileText, Send } from 'lucide-react';
 
 export function Footer() {
   const [formData, setFormData] = useState({

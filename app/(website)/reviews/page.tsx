@@ -9,7 +9,6 @@ import { SectionHeading } from '@/components/SectionHeading';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ReviewCardSkeleton } from '@/components/Skeletons';
 import { Review } from '@/lib/data';
-import { Grid, HelpCircle, ArrowRight } from 'lucide-react';
 
 export default function ReviewsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);

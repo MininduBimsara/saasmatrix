@@ -12,17 +12,35 @@ interface AdContainerProps {
 
 export function AdContainer({
   slotId,
-  layoutType,
+  layoutType: _layoutType,
   format = "auto",
   responsive = true,
   className = "",
 }: AdContainerProps) {
+  const [hasConsent, setHasConsent] = useState(false);
   const [adFailed, setAdFailed] = useState(false);
   const insRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return () => {};
+    }
+    const checkConsent = () => {
+      const stored = localStorage.getItem("saaspebble-cookie-consent");
+      setHasConsent(stored === "accepted");
+    };
+
+    checkConsent();
+
+    window.addEventListener("cookie-consent-updated", checkConsent);
+    return () => {
+      window.removeEventListener("cookie-consent-updated", checkConsent);
+    };
+  }, []);
+
+  useEffect(() => {
     // Prevent execution cycles during server-side compilation passes
-    if (typeof window !== "undefined") {
+    if (hasConsent && typeof window !== "undefined") {
       try {
         if (insRef.current && !insRef.current.dataset.adsbygoogleStatus) {
           // Hydrate the universal script array
@@ -33,7 +51,7 @@ export function AdContainer({
         setAdFailed(true);
       }
     }
-  }, []);
+  }, [hasConsent]);
 
   if (adFailed) {
     // Gracefully collapse into a clean, minimal brand-accent block if blocked or failed
@@ -49,15 +67,22 @@ export function AdContainer({
       
       {/* Semantic structural container wrapper ensuring structural height safety boundaries */}
       <div className="w-full bg-slate-50/50 border border-dashed border-slate-200/60 rounded-xl overflow-hidden flex items-center justify-center p-2 min-h-[90px] transition-all">
-        <ins
-          ref={insRef}
-          className="adsbygoogle"
-          style={{ display: "block", width: "100%" }}
-          data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" // Replace with your verified vendor index
-          data-ad-slot={slotId}
-          data-ad-format={format}
-          data-full-width-responsive={responsive ? "true" : "false"}
-        />
+        {hasConsent ? (
+          <ins
+            ref={insRef}
+            className="adsbygoogle"
+            style={{ display: "block", width: "100%" }}
+            data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" // Replace with your verified vendor index
+            data-ad-slot={slotId}
+            data-ad-format={format}
+            data-full-width-responsive={responsive ? "true" : "false"}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 py-4 w-full">
+            <div className="h-3 w-28 bg-slate-200/60 rounded animate-pulse" />
+            <div className="h-2.5 w-40 bg-slate-200/40 rounded animate-pulse" />
+          </div>
+        )}
       </div>
     </div>
   );

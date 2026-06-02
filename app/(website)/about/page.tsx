@@ -6,7 +6,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
-import { ArrowRight, CheckCircle, ShieldCheck, HelpCircle, Bookmark, Star } from 'lucide-react';
+import { ShieldCheck, Star } from 'lucide-react';
 
 export default function AboutPage() {
   const PRINCIPLES = [

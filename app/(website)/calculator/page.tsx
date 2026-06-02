@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
-import { SectionHeading } from '@/components/SectionHeading';
-import { HelpCircle, ChevronRight, TrendingUp, AlertCircle, Check, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function CalculatorPage() {
   const [hoursSaved, setHoursSaved] = useState<number>(5);

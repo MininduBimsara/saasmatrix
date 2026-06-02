@@ -523,14 +523,14 @@ export default function AdminPage() {
     };
   }, [isAuthenticated, supabaseActive]);
 
-  // Handle timeout clear for the notification banner
   useEffect(() => {
-    if (realtimeNotification) {
-      const timer = setTimeout(() => {
-        setRealtimeNotification(null);
-      }, 6000);
-      return () => clearTimeout(timer);
+    if (!realtimeNotification) {
+      return () => {};
     }
+    const timer = setTimeout(() => {
+      setRealtimeNotification(null);
+    }, 6000);
+    return () => clearTimeout(timer);
   }, [realtimeNotification]);
 
   useEffect(() => {

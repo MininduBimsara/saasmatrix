@@ -12,9 +12,7 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeftRight,
-  HelpCircle,
   Check,
-  Mail,
   Bell,
   Filter,
 } from "lucide-react";

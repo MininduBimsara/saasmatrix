@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
-import { Mail, Check, MessageSquare, ShieldCheck, MapPin, Phone } from 'lucide-react';
+import { Mail, Check, MessageSquare, ShieldCheck, MapPin } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({

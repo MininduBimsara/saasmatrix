@@ -6,11 +6,9 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AdContainer } from "@/components/AdContainer";
-import { Hero3DScene } from "@/components/Hero3DScene";
 import { ReviewCard } from "@/components/ReviewCard";
 import { ReviewCardSkeleton } from "@/components/Skeletons";
-import { SectionHeading } from "@/components/SectionHeading";
-import { CATEGORIES, Category, Review, Tool } from "@/lib/data";
+import { CATEGORIES, Review, Tool } from "@/lib/data";
 import {
   Coins,
   Layers,
@@ -21,7 +19,6 @@ import {
   Megaphone,
   Palette,
   Search,
-  Sliders,
   Sparkles,
   ArrowRight,
   CheckCircle2,
@@ -29,7 +26,6 @@ import {
   Award,
   Zap,
   Check,
-  TrendingUp,
   SlidersHorizontal,
   ChevronDown,
 } from "lucide-react";

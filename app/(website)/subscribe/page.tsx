@@ -47,12 +47,12 @@ const FAQ_LIST: FAQItem[] = [
 
 export default function SubscribePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  // const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [selectedFaq, setSelectedFaq] = useState<number | null>(null);
-  const [setupTipsOpen, setSetupTipsOpen] = useState(true);
+  // const [setupTipsOpen, setSetupTipsOpen] = useState(true);
 
   // Read public key safely. Handle absence gracefully as mandated by environment guidelines.
-  const handleCheckoutInitiation = async (planId: string) => {
+  const handleCheckoutInitiation = async (_planId: string) => {
     // Launch Phase redirect: All features are 100% free and sponsored by Google AdSense
     window.location.href = '/newsletter';
     return;

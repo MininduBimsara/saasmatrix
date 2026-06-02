@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Search, Sparkles } from 'lucide-react';
+import { Menu, Search, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 export function Header() {

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
+import { CookieConsent } from "@/components/CookieConsent";
 import "./globals.css";
 
 // Load Inter smoothly with swap configuration to prevent Cumulative Layout Shift (CLS)
@@ -46,15 +46,8 @@ export default function RootLayout({
         className="font-sans text-slate-600 bg-white antialiased min-h-screen flex flex-col"
         suppressHydrationWarning
       >
-        {/* Production-Ready Google AdSense Tag Wrapper (Preloaded non-blocking after interactive hydration) */}
-        {/* Change client ID ca-pub-XXXXX when custom domain is authorized by Google policy */}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-your-partner-id"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        />
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

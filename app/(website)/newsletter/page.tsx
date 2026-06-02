@@ -6,7 +6,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
-import { Mail, Check, Star, CheckCircle, ArrowRight, Shield, AlertCircle } from 'lucide-react';
+import { Mail, Check, Star, CheckCircle, ArrowRight, Shield } from 'lucide-react';
 
 export default function NewsletterPage() {
   const [emailInput, setEmailInput] = useState('');
