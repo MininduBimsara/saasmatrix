@@ -11,6 +11,8 @@ import { Mail, Check, Star, CheckCircle, ArrowRight, Shield } from 'lucide-react
 export default function NewsletterPage() {
   const [emailInput, setEmailInput] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const BENEFITS = [
     {
@@ -49,10 +51,33 @@ export default function NewsletterPage() {
     }
   ];
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput) return;
-    setIsSubmitted(true);
+    setSubmitError('');
+    setIsLoading(true);
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/minindufreelance@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          email: emailInput,
+          _subject: 'New Newsletter Subscription - SaaSPebble',
+          _captcha: 'false',
+          _honey: '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success === 'true' || data.success === true) {
+        setIsSubmitted(true);
+      } else {
+        setSubmitError('Subscription failed. Please try again.');
+      }
+    } catch {
+      setSubmitError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -170,11 +195,16 @@ export default function NewsletterPage() {
                   <button
                     id="submit-newsletter-btn"
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                    disabled={isLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-3 px-4 rounded-xl cursor-pointer transition-colors shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Receive Free PDF Workbook & Join List
-                    <ArrowRight className="h-4 w-4" />
+                    {isLoading ? 'Subscribing...' : 'Receive Free PDF Workbook & Join List'}
+                    {!isLoading && <ArrowRight className="h-4 w-4" />}
                   </button>
+
+                  {submitError && (
+                    <p className="text-[10px] text-rose-400 font-bold text-center">{submitError}</p>
+                  )}
 
                   <div className="flex items-center gap-1 text-[10px] text-slate-500 justify-center">
                     <Shield className="h-3 w-3" />

@@ -11,6 +11,7 @@ export function Footer() {
     message: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorStatus, setErrorStatus] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -18,18 +19,37 @@ export function Footer() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.company) {
       setErrorStatus('Please provide name, email, and company name.');
       return;
     }
     setErrorStatus('');
-    setIsSubmitted(true);
-    // Persist mock action / display conversion success
-    setTimeout(() => {
-      setFormData({ name: '', email: '', company: '', message: '' });
-    }, 2500);
+    setIsLoading(true);
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/minindufreelance@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          _subject: 'New Board Audit Request - SaaSPebble',
+          _captcha: 'false',
+          _honey: '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success === 'true' || data.success === true) {
+        setIsSubmitted(true);
+        setFormData({ name: '', email: '', company: '', message: '' });
+      } else {
+        setErrorStatus('Submission failed. Please try again.');
+      }
+    } catch {
+      setErrorStatus('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -207,9 +227,10 @@ export function Footer() {
                 <button
                   id="submit-form-button"
                   type="submit"
-                  className="w-full flex items-center justify-center bg-slate-900 hover:bg-slate-800 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-3.5 min-h-[44px] rounded-sm transition-colors focus:ring-1 focus:ring-slate-950"
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center bg-slate-900 hover:bg-slate-800 hover:cursor-pointer text-white text-[10px] font-mono uppercase tracking-widest font-bold py-3.5 min-h-[44px] rounded-sm transition-colors focus:ring-1 focus:ring-slate-950 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  REQUEST BOARD AUDIT
+                  {isLoading ? 'SUBMITTING...' : 'REQUEST BOARD AUDIT'}
                 </button>
               </form>
             )}
