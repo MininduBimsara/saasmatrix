@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -48,7 +48,7 @@ export default function ContactPage() {
         setIsSubmitted(true);
         setFormData({ name: '', email: '', company: '', niche: 'general', message: '' });
       } else {
-        setErrorText('Submission failed. Please try again or email us directly.');
+        setErrorText(data.message || 'Submission failed. Please try again or email us directly.');
       }
     } catch {
       setErrorText('Network error. Please check your connection and try again.');

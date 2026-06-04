@@ -32,15 +32,15 @@ export function middleware(_request: NextRequest) {
   const csp = [
     "default-src 'self'",
     // Next.js requires unsafe-inline for its runtime; unsafe-eval for certain SSR features
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://adservice.google.com https://*.adtrafficquality.google https://*.googlesyndication.com https://*.doubleclick.net",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://www.googletagmanager.com https://adservice.google.com https://*.adtrafficquality.google https://*.googlesyndication.com https://*.doubleclick.net https://vercel.live https://*.vercel.live",
     "style-src 'self' 'unsafe-inline'",
     // Allow images from HTTPS origins plus data URIs and blobs (for icon previews)
     "img-src 'self' data: blob: https:",
     "font-src 'self'",
-    // Supabase REST + WebSocket, Lemon Squeezy, Gemini AI endpoints, FormSubmit
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.lemonsqueezy.com https://generativelanguage.googleapis.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.googlesyndication.com https://pagead2.googlesyndication.com https://formsubmit.co",
+    // Supabase REST + WebSocket, Lemon Squeezy, Gemini AI endpoints, FormSubmit, Vercel
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.lemonsqueezy.com https://generativelanguage.googleapis.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.googlesyndication.com https://pagead2.googlesyndication.com https://formsubmit.co https://vercel.live https://*.vercel.live wss://*.vercel.live",
     // AdSense iframes
-    "frame-src https://*.doubleclick.net https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.adtrafficquality.google https://*.google.com",
+    "frame-src https://*.doubleclick.net https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.adtrafficquality.google https://*.google.com https://vercel.live https://*.vercel.live",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

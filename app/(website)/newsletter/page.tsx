@@ -71,7 +71,7 @@ export default function NewsletterPage() {
       if (data.success === 'true' || data.success === true) {
         setIsSubmitted(true);
       } else {
-        setSubmitError('Subscription failed. Please try again.');
+        setSubmitError(data.message || 'Subscription failed. Please try again.');
       }
     } catch {
       setSubmitError('Network error. Please check your connection and try again.');

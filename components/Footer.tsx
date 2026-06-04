@@ -43,7 +43,7 @@ export function Footer() {
         setIsSubmitted(true);
         setFormData({ name: '', email: '', company: '', message: '' });
       } else {
-        setErrorStatus('Submission failed. Please try again.');
+        setErrorStatus(data.message || 'Submission failed. Please try again.');
       }
     } catch {
       setErrorStatus('Network error. Please try again.');
