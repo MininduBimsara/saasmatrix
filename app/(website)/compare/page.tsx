@@ -73,6 +73,22 @@ export default function ComparePage() {
   const toolBStartingPrice = toolB?.startingPrice ?? "N/A";
   const toolANumericPrice = toolA?.numericPrice ?? Number.POSITIVE_INFINITY;
   const toolBNumericPrice = toolB?.numericPrice ?? Number.POSITIVE_INFINITY;
+  const toolAPricingModel = toolA?.pricingModel ?? null;
+  const toolBPricingModel = toolB?.pricingModel ?? null;
+  const toolATierName = toolA?.tierName ?? null;
+  const toolBTierName = toolB?.tierName ?? null;
+  const toolAFreeTrial = toolA?.freeTrial ?? null;
+  const toolBFreeTrial = toolB?.freeTrial ?? null;
+  const toolAFreeForever = toolA?.freeForever ?? null;
+  const toolBFreeForever = toolB?.freeForever ?? null;
+  const toolAAiIncluded = toolA?.aiIncluded ?? null;
+  const toolBAiIncluded = toolB?.aiIncluded ?? null;
+  const toolAAiCost = toolA?.aiCost ?? null;
+  const toolBAiCost = toolB?.aiCost ?? null;
+  const toolAKeyFeatures = toolA?.keyFeatures ?? [];
+  const toolBKeyFeatures = toolB?.keyFeatures ?? [];
+  const toolALimitations = toolA?.limitations ?? [];
+  const toolBLimitations = toolB?.limitations ?? [];
 
   // Check if published review exists for this pairing
   const existingReview = useMemo(() => {
@@ -330,13 +346,13 @@ export default function ComparePage() {
                   </div>
 
                   <div className="divide-y divide-slate-100">
-                    {/* Row 1: License Price Difference */}
+                    {/* Row: Starting price */}
                     <div className="grid grid-cols-3 p-4 items-center gap-2">
                       <div className="font-semibold text-slate-800 text-xs">
-                        Starting monthly subscription
+                        Starting monthly price
                       </div>
                       <div
-                        className={`p-1.5 rounded ${toolANumericPrice <= toolBNumericPrice ? "bg-amber-100/50 font-bold text-slate-900" : "text-slate-650"}`}
+                        className={`p-1.5 rounded ${toolANumericPrice <= toolBNumericPrice ? "bg-amber-100/50 font-bold text-slate-900" : "text-slate-600"}`}
                       >
                         {toolAStartingPrice}{" "}
                         {toolANumericPrice <= toolBNumericPrice && (
@@ -346,7 +362,7 @@ export default function ComparePage() {
                         )}
                       </div>
                       <div
-                        className={`p-1.5 rounded ${toolBNumericPrice <= toolANumericPrice ? "bg-amber-100/50 font-bold text-slate-900" : "text-slate-650"}`}
+                        className={`p-1.5 rounded ${toolBNumericPrice <= toolANumericPrice ? "bg-amber-100/50 font-bold text-slate-900" : "text-slate-600"}`}
                       >
                         {toolBStartingPrice}{" "}
                         {toolBNumericPrice <= toolANumericPrice && (
@@ -357,31 +373,218 @@ export default function ComparePage() {
                       </div>
                     </div>
 
-                    {/* Row 2: Category Match */}
+                    {/* Row: Pricing model */}
+                    {(toolAPricingModel || toolBPricingModel) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          Pricing model
+                        </div>
+                        <div className="text-slate-600 capitalize">
+                          {toolAPricingModel ?? "—"}
+                        </div>
+                        <div className="text-slate-600 capitalize">
+                          {toolBPricingModel ?? "—"}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: Entry tier name */}
+                    {(toolATierName || toolBTierName) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          Entry-level plan name
+                        </div>
+                        <div className="text-slate-600">
+                          {toolATierName ?? "—"}
+                        </div>
+                        <div className="text-slate-600">
+                          {toolBTierName ?? "—"}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: Free trial */}
+                    {(toolAFreeTrial !== null || toolBFreeTrial !== null) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          Free trial
+                        </div>
+                        <div>
+                          {toolAFreeTrial === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolAFreeTrial ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              ✓ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ No
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          {toolBFreeTrial === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolBFreeTrial ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              ✓ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ No
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: Free forever plan */}
+                    {(toolAFreeForever !== null || toolBFreeForever !== null) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          Free forever plan
+                        </div>
+                        <div>
+                          {toolAFreeForever === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolAFreeForever ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              ✓ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ No
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          {toolBFreeForever === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolBFreeForever ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              ✓ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ No
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: AI included */}
+                    {(toolAAiIncluded !== null || toolBAiIncluded !== null) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          AI features included
+                        </div>
+                        <div>
+                          {toolAAiIncluded === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolAAiIncluded ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                              ✓ Included
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ Not included
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          {toolBAiIncluded === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : toolBAiIncluded ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                              ✓ Included
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                              ✗ Not included
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: AI add-on cost */}
+                    {(toolAAiCost || toolBAiCost) && (
+                      <div className="grid grid-cols-3 p-4 items-center gap-2">
+                        <div className="font-semibold text-slate-800 text-xs">
+                          AI add-on cost
+                        </div>
+                        <div className="text-slate-600">
+                          {toolAAiCost ?? "—"}
+                        </div>
+                        <div className="text-slate-600">
+                          {toolBAiCost ?? "—"}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Row: Category */}
                     <div className="grid grid-cols-3 p-4 items-center gap-2">
                       <div className="font-semibold text-slate-800 text-xs">
-                        Vertical Integration Segment
+                        Category
                       </div>
                       <div className="text-slate-600 capitalize">
-                        {toolACategory.replace("-", " ")}
+                        {toolACategory.replace(/-/g, " ")}
                       </div>
                       <div className="text-slate-600 capitalize">
-                        {toolBCategory.replace("-", " ")}
+                        {toolBCategory.replace(/-/g, " ")}
                       </div>
                     </div>
 
-                    {/* Row 3: Live Sync Capabilities */}
-                    <div className="grid grid-cols-3 p-4 items-center gap-2">
-                      <div className="font-semibold text-slate-800 text-xs">
-                        Performance Core Advantage
+                    {/* Row: Key features */}
+                    {(toolAKeyFeatures.length > 0 || toolBKeyFeatures.length > 0) && (
+                      <div className="grid grid-cols-3 p-4 items-start gap-2">
+                        <div className="font-semibold text-slate-800 text-xs pt-0.5">
+                          Key features
+                        </div>
+                        <ul className="space-y-1">
+                          {toolAKeyFeatures.length > 0 ? toolAKeyFeatures.map((f, i) => (
+                            <li key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
+                              <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                              {f}
+                            </li>
+                          )) : <li className="text-slate-400 text-[11px]">—</li>}
+                        </ul>
+                        <ul className="space-y-1">
+                          {toolBKeyFeatures.length > 0 ? toolBKeyFeatures.map((f, i) => (
+                            <li key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
+                              <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                              {f}
+                            </li>
+                          )) : <li className="text-slate-400 text-[11px]">—</li>}
+                        </ul>
                       </div>
-                      <div className="text-slate-600 font-semibold text-[11px] text-emerald-600 font-mono">
-                        Tested Real Yield
+                    )}
+
+                    {/* Row: Limitations */}
+                    {(toolALimitations.length > 0 || toolBLimitations.length > 0) && (
+                      <div className="grid grid-cols-3 p-4 items-start gap-2">
+                        <div className="font-semibold text-slate-800 text-xs pt-0.5">
+                          Known limitations
+                        </div>
+                        <ul className="space-y-1">
+                          {toolALimitations.length > 0 ? toolALimitations.map((l, i) => (
+                            <li key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
+                              <span className="text-red-400 mt-0.5 shrink-0">•</span>
+                              {l}
+                            </li>
+                          )) : <li className="text-slate-400 text-[11px]">—</li>}
+                        </ul>
+                        <ul className="space-y-1">
+                          {toolBLimitations.length > 0 ? toolBLimitations.map((l, i) => (
+                            <li key={i} className="text-[11px] text-slate-600 flex items-start gap-1">
+                              <span className="text-red-400 mt-0.5 shrink-0">•</span>
+                              {l}
+                            </li>
+                          )) : <li className="text-slate-400 text-[11px]">—</li>}
+                        </ul>
                       </div>
-                      <div className="text-slate-605 font-semibold text-[11px] text-emerald-600 font-mono">
-                        Tested Real Yield
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </section>
