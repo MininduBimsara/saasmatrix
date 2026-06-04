@@ -212,7 +212,7 @@ export default function AdminPage() {
     category: "project-management",
     excerpt: "",
     readTimeMinutes: 5,
-    publicationDate: new Date().toISOString().split("T")[0],
+    publicationDate: getDefaultLocalDateTime(),
     verdict: "editor-pick",
     winnerSlug: "",
     hotTakeQuote: "",
@@ -456,14 +456,14 @@ export default function AdminPage() {
                 db.saveCustomReview({
                   slug: r.slug,
                   title: r.title,
-                  toolA: r.tool_a,
-                  toolB: r.tool_b,
+                  toolA: r.tool_a || null,
+                  toolB: r.tool_b || null,
                   category: r.category,
                   excerpt: r.excerpt || "",
-                  readTimeMinutes: Number(r.read_time_minutes || 5),
+                  readTimeMinutes: r.read_time_minutes !== null && r.read_time_minutes !== undefined ? Number(r.read_time_minutes) : 5,
                   publicationDate: r.publication_date,
-                  verdict: r.verdict || "editor-pick",
-                  winnerSlug: r.winner_slug || "",
+                  verdict: r.verdict || null,
+                  winnerSlug: r.winner_slug || null,
                   hotTakeQuote: r.hot_take_quote || "",
                   finalVerdictParagraph: r.final_verdict_paragraph || "",
                   bestForA: r.best_for_a || "",
@@ -800,8 +800,26 @@ export default function AdminPage() {
     e.preventDefault();
     if (!reviewForm.slug || !reviewForm.title) return;
 
+    const parsedPublicationDate = reviewForm.publicationDate.trim()
+      ? new Date(reviewForm.publicationDate)
+      : null;
+
     const completeReview: Review = {
       ...reviewForm,
+      toolA: reviewForm.toolA || "",
+      toolB: reviewForm.toolB || "",
+      excerpt: reviewForm.excerpt || "",
+      readTimeMinutes: reviewForm.readTimeMinutes !== null && reviewForm.readTimeMinutes !== undefined ? Number(reviewForm.readTimeMinutes) : 5,
+      verdict: reviewForm.verdict || null,
+      winnerSlug: reviewForm.winnerSlug || null,
+      hotTakeQuote: reviewForm.hotTakeQuote || "",
+      finalVerdictParagraph: reviewForm.finalVerdictParagraph || "",
+      bestForA: reviewForm.bestForA || "",
+      bestForB: reviewForm.bestForB || "",
+      publicationDate:
+        parsedPublicationDate && !Number.isNaN(parsedPublicationDate.getTime())
+          ? parsedPublicationDate.toISOString()
+          : new Date().toISOString(),
       tableRows: customTableRows,
     };
 
@@ -968,14 +986,14 @@ export default function AdminPage() {
 
       const normalized: Review[] = parsed.map((item: any, index: number) => {
         const title = String(item?.title || "").trim();
-        const toolA = String(item?.toolA || "").trim();
-        const toolB = String(item?.toolB || "").trim();
+        const toolA = item?.toolA ? String(item.toolA).trim() : "";
+        const toolB = item?.toolB ? String(item.toolB).trim() : "";
         const category = String(item?.category || "").trim();
-        const excerpt = String(item?.excerpt || "").trim();
+        const excerpt = item?.excerpt ? String(item.excerpt).trim() : "";
 
-        if (!title || !toolA || !toolB || !category || !excerpt) {
+        if (!title || !category) {
           throw new Error(
-            `Row ${index + 1} is missing title, toolA, toolB, category, or excerpt.`,
+            `Row ${index + 1} is missing title or category.`,
           );
         }
 
@@ -986,16 +1004,14 @@ export default function AdminPage() {
           toolB,
           category: category as CategorySlug,
           excerpt,
-          readTimeMinutes: Number(item?.readTimeMinutes) || 5,
+          readTimeMinutes: item?.readTimeMinutes !== undefined && item?.readTimeMinutes !== null ? Number(item.readTimeMinutes) : 5,
           publicationDate: new Date().toISOString(),
-          verdict: (item?.verdict || "editor-pick") as Review["verdict"],
-          winnerSlug: String(item?.winnerSlug || toolA).trim(),
-          hotTakeQuote: String(item?.hotTakeQuote || "").trim(),
-          finalVerdictParagraph: String(
-            item?.finalVerdictParagraph || "",
-          ).trim(),
-          bestForA: String(item?.bestForA || "").trim(),
-          bestForB: String(item?.bestForB || "").trim(),
+          verdict: (item?.verdict || null) as Review["verdict"],
+          winnerSlug: item?.winnerSlug ? String(item.winnerSlug).trim() : null,
+          hotTakeQuote: item?.hotTakeQuote ? String(item.hotTakeQuote).trim() : "",
+          finalVerdictParagraph: item?.finalVerdictParagraph ? String(item.finalVerdictParagraph).trim() : "",
+          bestForA: item?.bestForA ? String(item.bestForA).trim() : "",
+          bestForB: item?.bestForB ? String(item.bestForB).trim() : "",
           tableRows: Array.isArray(item?.tableRows) ? item.tableRows : [],
         };
       });
@@ -1345,7 +1361,7 @@ export default function AdminPage() {
       category: "project-management",
       excerpt: "",
       readTimeMinutes: 5,
-      publicationDate: new Date().toISOString().split("T")[0],
+      publicationDate: getDefaultLocalDateTime(),
       verdict: "editor-pick",
       winnerSlug: toolsList[0]?.slug || "",
       hotTakeQuote: "",
@@ -1386,18 +1402,18 @@ export default function AdminPage() {
     setReviewForm({
       slug: review.slug,
       title: review.title,
-      toolA: review.toolA,
-      toolB: review.toolB,
+      toolA: review.toolA || "",
+      toolB: review.toolB || "",
       category: review.category,
-      excerpt: review.excerpt,
-      readTimeMinutes: review.readTimeMinutes,
-      publicationDate: review.publicationDate,
+      excerpt: review.excerpt || "",
+      readTimeMinutes: review.readTimeMinutes !== null && review.readTimeMinutes !== undefined ? Number(review.readTimeMinutes) : 5,
+      publicationDate: toLocalDateTimeValue(review.publicationDate),
       verdict: review.verdict || "editor-pick",
       winnerSlug: review.winnerSlug || "",
-      hotTakeQuote: review.hotTakeQuote,
-      finalVerdictParagraph: review.finalVerdictParagraph,
-      bestForA: review.bestForA,
-      bestForB: review.bestForB,
+      hotTakeQuote: review.hotTakeQuote || "",
+      finalVerdictParagraph: review.finalVerdictParagraph || "",
+      bestForA: review.bestForA || "",
+      bestForB: review.bestForB || "",
     });
     setCustomTableRows(review.tableRows || []);
     setEditingReviewSlug(review.slug);
@@ -2224,7 +2240,7 @@ export default function AdminPage() {
                               <img
                                 src={toolForm.iconUrl}
                                 alt="Icon preview"
-                                className="h-8 w-8 rounded-full object-contain border border-slate-200 bg-white"
+                                className="h-8 w-8 rounded-lg object-contain border border-slate-200 bg-white p-1"
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
                                   (e.target as HTMLElement).style.display =
@@ -2314,11 +2330,11 @@ export default function AdminPage() {
                                     <img
                                       src={t.iconUrl}
                                       alt={t.name}
-                                      className="h-6 w-6 rounded-full object-contain bg-white border border-slate-250 shrink-0"
+                                      className="h-6 w-6 rounded-md object-contain bg-white p-0.5 border border-slate-250 shrink-0"
                                       referrerPolicy="no-referrer"
                                     />
                                   ) : (
-                                    <div className="h-6 w-6 rounded-full flex items-center justify-center bg-rose-500 text-white text-[10px] font-black shrink-0">
+                                    <div className="h-6 w-6 rounded-md flex items-center justify-center bg-rose-500 text-white text-[10px] font-black shrink-0">
                                       {t.name.slice(0, 2).toUpperCase()}
                                     </div>
                                   )}
@@ -2445,15 +2461,16 @@ export default function AdminPage() {
                           Select Tool Name A:
                         </label>
                         <select
-                          value={reviewForm.toolA}
+                          value={reviewForm.toolA || ""}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
-                              toolA: e.target.value,
+                              toolA: e.target.value || "",
                             }))
                           }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
+                          <option value="">-- None (Optional) --</option>
                           {toolsList.map((t) => (
                             <option key={t.slug} value={t.slug}>
                               {t.name}
@@ -2468,15 +2485,16 @@ export default function AdminPage() {
                           Select Tool Name B:
                         </label>
                         <select
-                          value={reviewForm.toolB}
+                          value={reviewForm.toolB || ""}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
-                              toolB: e.target.value,
+                              toolB: e.target.value || "",
                             }))
                           }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-slate-800"
                         >
+                          <option value="">-- None (Optional) --</option>
                           {toolsList.map((t) => (
                             <option key={t.slug} value={t.slug}>
                               {t.name}
@@ -2514,17 +2532,19 @@ export default function AdminPage() {
                           Editor Award selection:
                         </label>
                         <select
-                          value={reviewForm.verdict || "editor-pick"}
+                          value={reviewForm.verdict || ""}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
-                              verdict: e.target.value as any,
+                              verdict: (e.target.value || null) as any,
                             }))
                           }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
                         >
+                          <option value="">None</option>
                           <option value="editor-pick">Editor Pick</option>
                           <option value="hot-take">Hot Take Winner</option>
+                          <option value="skip">Skip</option>
                           <option value="tie">Evaluative Tie</option>
                         </select>
                       </div>
@@ -2536,7 +2556,6 @@ export default function AdminPage() {
                         </label>
                         <input
                           type="text"
-                          required
                           placeholder="e.g. asana"
                           value={reviewForm.winnerSlug || ""}
                           onChange={(e) =>
@@ -2555,13 +2574,33 @@ export default function AdminPage() {
                           Date Issued:
                         </label>
                         <input
-                          type="text"
+                          type="datetime-local"
                           required
                           value={reviewForm.publicationDate}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
                               publicationDate: e.target.value,
+                            }))
+                          }
+                          className="w-full p-2 border border-slate-250 bg-white rounded-lg"
+                        />
+                      </div>
+
+                      {/* Read Time (Minutes) */}
+                      <div className="space-y-1">
+                        <label className="block font-bold text-slate-700">
+                          Read Time (Minutes):
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={reviewForm.readTimeMinutes !== null && reviewForm.readTimeMinutes !== undefined ? reviewForm.readTimeMinutes : 5}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              readTimeMinutes: Number(e.target.value) || 5,
                             }))
                           }
                           className="w-full p-2 border border-slate-250 bg-white rounded-lg"
@@ -2576,9 +2615,8 @@ export default function AdminPage() {
                       </label>
                       <input
                         type="text"
-                        required
                         placeholder="An expert software audit benchmarking task lifecycle planning..."
-                        value={reviewForm.excerpt}
+                        value={reviewForm.excerpt || ""}
                         onChange={(e) =>
                           setReviewForm((prev) => ({
                             ...prev,
@@ -2596,9 +2634,8 @@ export default function AdminPage() {
                       </label>
                       <input
                         type="text"
-                        required
                         placeholder="e.g. Asana rules user layouts but Monday is 10x cheaper."
-                        value={reviewForm.hotTakeQuote}
+                        value={reviewForm.hotTakeQuote || ""}
                         onChange={(e) =>
                           setReviewForm((prev) => ({
                             ...prev,
@@ -2617,9 +2654,8 @@ export default function AdminPage() {
                         </label>
                         <input
                           type="text"
-                          required
                           placeholder="Best for enterprise-level compliance and charts."
-                          value={reviewForm.bestForA}
+                          value={reviewForm.bestForA || ""}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
@@ -2635,9 +2671,8 @@ export default function AdminPage() {
                         </label>
                         <input
                           type="text"
-                          required
                           placeholder="Best for small agile startups on tighter budgets."
-                          value={reviewForm.bestForB}
+                          value={reviewForm.bestForB || ""}
                           onChange={(e) =>
                             setReviewForm((prev) => ({
                               ...prev,
@@ -2655,10 +2690,9 @@ export default function AdminPage() {
                         Final Verdict Statement:
                       </label>
                       <textarea
-                        required
                         rows={3}
                         placeholder="Enter the broad conclusion explaining which platform fits which archetype profile."
-                        value={reviewForm.finalVerdictParagraph}
+                        value={reviewForm.finalVerdictParagraph || ""}
                         onChange={(e) =>
                           setReviewForm((prev) => ({
                             ...prev,
@@ -4097,23 +4131,28 @@ CREATE TABLE saas_tools (
 
 -- 2. Create Reviews table
 CREATE TABLE saas_reviews (
-  slug VARCHAR(150) PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  tool_a VARCHAR(150) REFERENCES saas_tools(slug),
-  tool_b VARCHAR(150) REFERENCES saas_tools(slug),
-  category VARCHAR(150) NOT NULL,
-  excerpt TEXT,
-  read_time_minutes INT DEFAULT 5,
-  publication_date VARCHAR(100) NOT NULL,
-  verdict VARCHAR(100),
-  winner_slug VARCHAR(150),
-  hot_take_quote TEXT,
-  final_verdict_paragraph TEXT,
-  best_for_a TEXT,
-  best_for_b TEXT,
-  table_rows JSONB,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  slug character varying(150) not null,
+  title character varying(255) not null,
+  tool_a character varying(150) null,
+  tool_b character varying(150) null,
+  category character varying(150) not null,
+  excerpt text null,
+  read_time_minutes integer null default 5,
+  publication_date timestamp with time zone not null,
+  verdict character varying(100) null,
+  winner_slug character varying(150) null,
+  hot_take_quote text null,
+  final_verdict_paragraph text null,
+  best_for_a text null,
+  best_for_b text null,
+  table_rows jsonb null,
+  updated_at timestamp with time zone null default CURRENT_TIMESTAMP,
+  constraint saas_reviews_pkey primary key (slug),
+  constraint saas_reviews_tool_a_fkey foreign KEY (tool_a) references saas_tools (slug) on delete set null,
+  constraint saas_reviews_tool_b_fkey foreign KEY (tool_b) references saas_tools (slug) on delete set null
 );
+
+CREATE INDEX IF NOT EXISTS idx_saas_reviews_publication_date on public.saas_reviews using btree (publication_date);
 
 -- 3. Create Blog Posts table
 CREATE TABLE saas_blog_posts (

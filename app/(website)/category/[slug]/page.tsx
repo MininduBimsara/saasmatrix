@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CATEGORIES, TOOLS, REVIEWS, getCategory } from '@/lib/data';
@@ -28,10 +28,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${category.name} Review Index & Comparison Matrices | SaaSPebble`,
     description: `${category.blurb} Detailed comparative analysis, performance benchmarking, and verified pricing lists.`,
+    alternates: { canonical: `https://saaspebble.tech/category/${slug}` },
     openGraph: {
       title: `${category.name} Comparison Matrices & Ratings`,
       description: category.blurb,
       type: 'website',
+      url: `https://saaspebble.tech/category/${slug}`,
+      siteName: 'SaaSPebble',
     },
     twitter: {
       card: 'summary_large_image',

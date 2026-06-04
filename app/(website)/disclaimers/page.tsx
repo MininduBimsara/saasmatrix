@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
@@ -84,7 +84,7 @@ export default function DisclaimersPage() {
             </div>
 
             <div className="border-t border-slate-100 pt-8 text-[11px] text-slate-400">
-              For corporate legal inquiries or to review our software testing sandboxes directly, please reach out to operations@saaspebble.co.
+              For corporate legal inquiries or to review our software testing sandboxes directly, please reach out to operations@saaspebble.tech.
             </div>
           </section>
         </div>

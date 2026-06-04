@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
@@ -91,7 +91,7 @@ export default function TermsPage() {
             </div>
 
             <div className="space-y-3 pt-4 font-mono text-[10px] text-slate-400">
-              If you have operational questions or require directory corrections, please file an official request to the engineering desk at support@saaspebble.co.
+              If you have operational questions or require directory corrections, please file an official request to the engineering desk at support@saaspebble.tech.
             </div>
           </section>
         </div>

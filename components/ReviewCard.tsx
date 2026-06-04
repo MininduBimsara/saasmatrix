@@ -44,37 +44,36 @@ export function ReviewCard({ review, variant: _variant = 'default', theme: _them
     const detailsB = getToolDetails(review.toolB);
 
     return (
-      <div className="flex items-center gap-1.5 select-none my-1">
-        <div className="relative flex items-center h-10">
-          {toolA?.iconUrl ? (
-            <img 
-              src={toolA.iconUrl} 
-              alt={toolA.name} 
-              className="relative h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105 z-20" 
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className={`relative h-9 w-9 rounded-full ${detailsA.bg} ${detailsA.text} border-2 border-white flex items-center justify-center font-mono text-[10px] font-black uppercase shadow-sm transition-transform duration-300 group-hover:scale-105 z-20`}>
-              {detailsA.initials}
-            </div>
-          )}
+      <div className="flex items-center justify-center gap-2.5 select-none my-1">
+        {toolA?.iconUrl ? (
+          <img 
+            src={toolA.iconUrl} 
+            alt={toolA.name} 
+            className="relative h-12 w-12 rounded-xl object-contain bg-white p-1.5 border border-slate-200/80 shadow-xs transition-transform duration-300 group-hover:scale-105 z-10" 
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className={`relative h-12 w-12 rounded-xl ${detailsA.bg} ${detailsA.text} border border-slate-200/80 flex items-center justify-center font-mono text-xs font-black uppercase shadow-xs transition-transform duration-300 group-hover:scale-105 z-10`}>
+            {detailsA.initials}
+          </div>
+        )}
 
-          {toolB?.iconUrl ? (
-            <img 
-              src={toolB.iconUrl} 
-              alt={toolB.name} 
-              className="relative h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm transition-transform duration-300 group-hover:scale-105 -ml-2.5 z-10" 
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className={`relative h-9 w-9 rounded-full ${detailsB.bg} ${detailsB.text} border-2 border-white flex items-center justify-center font-mono text-[10px] font-black uppercase shadow-sm transition-transform duration-300 group-hover:scale-105 -ml-2.5 z-10`}>
-              {detailsB.initials}
-            </div>
-          )}
-        </div>
-        <span className="text-[9px] bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-mono font-bold uppercase tracking-wider border border-slate-200 transition-colors group-hover:bg-rose-50 group-hover:text-rose-600 group-hover:border-rose-200">
+        <span className="text-[10px] bg-slate-100 text-slate-500 rounded-full px-2.5 py-1 font-mono font-bold uppercase tracking-wider border border-slate-200 transition-colors group-hover:bg-rose-50 group-hover:text-rose-600 group-hover:border-rose-200 shrink-0">
           VS
         </span>
+
+        {toolB?.iconUrl ? (
+          <img 
+            src={toolB.iconUrl} 
+            alt={toolB.name} 
+            className="relative h-12 w-12 rounded-xl object-contain bg-white p-1.5 border border-slate-200/80 shadow-xs transition-transform duration-300 group-hover:scale-105 z-10" 
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className={`relative h-12 w-12 rounded-xl ${detailsB.bg} ${detailsB.text} border border-slate-200/80 flex items-center justify-center font-mono text-xs font-black uppercase shadow-xs transition-transform duration-300 group-hover:scale-105 z-10`}>
+            {detailsB.initials}
+          </div>
+        )}
       </div>
     );
   };
@@ -96,9 +95,9 @@ export function ReviewCard({ review, variant: _variant = 'default', theme: _them
   };
 
   const cardClass = 'bg-white border border-slate-200/90 p-7 rounded-[24.5px] hover:shadow-xl hover:border-rose-500 hover:-translate-y-1 transition-all duration-300 text-slate-900 flex flex-col justify-between h-full';
-  const titleClass = 'text-base font-bold tracking-tight text-slate-950 group-hover:text-rose-500 transition-colors duration-200 mt-2';
-  const metaClass = 'pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-sans text-slate-550';
-  const textClass = 'text-xs text-slate-500 leading-relaxed mt-2.5 mb-6 line-clamp-3';
+  const titleClass = 'text-base font-bold tracking-tight text-slate-950 group-hover:text-rose-500 transition-colors duration-200 mt-2 text-center';
+  const metaClass = 'pt-4 border-t border-slate-100 flex flex-col items-center gap-2 text-[11px] font-sans text-slate-550';
+  const textClass = 'text-xs text-slate-500 leading-relaxed mt-2.5 mb-6 line-clamp-3 text-center';
   const buttonText = 'Reveal Report →';
 
   return (
@@ -108,7 +107,7 @@ export function ReviewCard({ review, variant: _variant = 'default', theme: _them
       className={`group block h-full ${cardClass}`}
     >
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
           {/* Custom Airbnb pink/rose indicator pill for organic premium look */}
           <span className="text-[10px] tracking-wider text-rose-600 font-extrabold uppercase bg-rose-50 px-3 py-1 rounded-full">
             {categoryLabel}
@@ -134,7 +133,7 @@ export function ReviewCard({ review, variant: _variant = 'default', theme: _them
         </h3>
         
         {/* Sub-heading Case Description */}
-        <p className="text-[11px] font-mono font-bold text-slate-400 mt-1 uppercase tracking-wider">
+        <p className="text-[11px] font-mono font-bold text-slate-400 mt-1 uppercase tracking-wider text-center">
           {review.title}
         </p>
 

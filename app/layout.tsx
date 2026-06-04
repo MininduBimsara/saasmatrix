@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { CookieConsent } from "@/components/CookieConsent";
 import "./globals.css";
@@ -14,7 +14,24 @@ export const metadata: Metadata = {
   title: "SaaSPebble | Top B2B Software Index & Performance Matrices",
   description:
     "Unbiased side-by-side SaaS comparison arrays, ratings, and matrix reports optimized for software buying decisions.",
-  metadataBase: new URL("https://saaspebble.co"),
+  metadataBase: new URL("https://saaspebble.tech"),
+  alternates: {
+    canonical: "https://saaspebble.tech",
+  },
+  openGraph: {
+    title: "SaaSPebble | Top B2B Software Index & Performance Matrices",
+    description:
+      "Unbiased side-by-side SaaS comparison arrays, ratings, and matrix reports optimized for software buying decisions.",
+    type: "website",
+    url: "https://saaspebble.tech",
+    siteName: "SaaSPebble",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SaaSPebble | Top B2B Software Index & Performance Matrices",
+    description:
+      "Unbiased side-by-side SaaS comparison arrays, ratings, and matrix reports optimized for software buying decisions.",
+  },
 };
 
 export const viewport: Viewport = {
@@ -41,6 +58,24 @@ export default function RootLayout({
         <link rel="preconnect" href="https://googleads.g.doubleclick.net" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "SaaSPebble",
+              url: "https://saaspebble.tech",
+              description:
+                "Independent B2B SaaS comparison index with sandbox-verified reviews and performance matrices.",
+              contactPoint: {
+                "@type": "ContactPoint",
+                email: "vetting@saaspebble.tech",
+                contactType: "editorial",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className="font-sans text-slate-600 bg-white antialiased min-h-screen flex flex-col"

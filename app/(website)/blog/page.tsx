@@ -90,6 +90,7 @@ export default function BlogIndexPage() {
 
           {/* Section Heading */}
           <SectionHeading
+            as="h1"
             title="The Dispatch: Analytical Essays & Procurement Audits"
             eyebrow="Insider Analysis"
             emphasized="Dispatch"
@@ -118,6 +119,14 @@ export default function BlogIndexPage() {
               </Link>{" "}
               to receive PDF transcripts automatically.
             </p>
+          </div>
+
+          {/* Top Banner Advertisement Block */}
+          <div className="mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="blog-index-top-banner"
+            />
           </div>
 
           {/* Vertical Stack Listings */}

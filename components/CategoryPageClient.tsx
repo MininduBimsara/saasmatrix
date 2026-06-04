@@ -176,6 +176,14 @@ export function CategoryPageClient({
             </div>
           </section>
 
+          {/* Bottom Banner Advertisement Block */}
+          <div className="mt-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId={`cat-${category.slug}-bottom`}
+            />
+          </div>
+
         </div>
       </main>
 

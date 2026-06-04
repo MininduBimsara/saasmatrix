@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Metadata } from 'next';
 import { REVIEWS, TOOLS } from '@/lib/data';
 import ReviewDetailsClient from '@/components/ReviewDetailsClient';
@@ -32,6 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
+    alternates: { canonical: `https://saaspebble.tech/reviews/${slug}` },
     keywords: [
       toolAName,
       toolBName,
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       type: 'article',
-      url: `https://saaspebble.co/reviews/${slug}`,
+      url: `https://saaspebble.tech/reviews/${slug}`,
       siteName: 'SaaSPebble',
     },
     twitter: {

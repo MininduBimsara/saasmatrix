@@ -38,10 +38,11 @@ export default function ReviewsPage() {
           </nav>
 
           {/* Editorial Section Heading */}
-          <SectionHeading 
-            title="Every verified software review matrix on file" 
-            eyebrow="The Full Archive" 
-            emphasized="review" 
+          <SectionHeading
+            as="h1"
+            title="Every verified software review matrix on file"
+            eyebrow="The Full Archive"
+            emphasized="review"
             meta={`${sortedReviews.length} Active Comparisons`}
           />
 
@@ -57,6 +58,14 @@ export default function ReviewsPage() {
                 Industry niches
               </Link>.
             </p>
+          </div>
+
+          {/* Top Banner Advertisement Block */}
+          <div className="mb-8">
+            <AdContainer
+              layoutType="top-banner"
+              slotId="archive-top-advert"
+            />
           </div>
 
           {/* Archive Grid */}

@@ -21,8 +21,10 @@ export function AdContainer({
   const [adFailed, setAdFailed] = useState(false);
   const insRef = useRef<HTMLModElement>(null);
 
+  const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === "true";
+
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!adsEnabled || typeof window === "undefined") {
       return () => {};
     }
     const checkConsent = () => {
@@ -36,9 +38,10 @@ export function AdContainer({
     return () => {
       window.removeEventListener("cookie-consent-updated", checkConsent);
     };
-  }, []);
+  }, [adsEnabled]);
 
   useEffect(() => {
+    if (!adsEnabled) return;
     // Prevent execution cycles during server-side compilation passes
     if (hasConsent && typeof window !== "undefined") {
       try {
@@ -51,7 +54,11 @@ export function AdContainer({
         setAdFailed(true);
       }
     }
-  }, [hasConsent]);
+  }, [hasConsent, adsEnabled]);
+
+  if (!adsEnabled) {
+    return null;
+  }
 
   if (adFailed) {
     // Gracefully collapse into a clean, minimal brand-accent block if blocked or failed

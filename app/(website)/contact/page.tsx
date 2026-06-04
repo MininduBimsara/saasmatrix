@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ export default function ContactPage() {
     message: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -23,17 +24,37 @@ export default function ContactPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.company || !formData.message) {
       setErrorText('Please populate all required fields so we can index your request correctly.');
       return;
     }
     setErrorText('');
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: '', email: '', company: '', niche: 'general', message: '' });
-    }, 3000);
+    setIsLoading(true);
+    try {
+      const res = await fetch('https://formsubmit.co/ajax/minindufreelance@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          _subject: 'New Contact Inquiry - SaaSPebble',
+          _captcha: 'false',
+          _honey: '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success === 'true' || data.success === true) {
+        setIsSubmitted(true);
+        setFormData({ name: '', email: '', company: '', niche: 'general', message: '' });
+      } else {
+        setErrorText('Submission failed. Please try again or email us directly.');
+      }
+    } catch {
+      setErrorText('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,7 +92,7 @@ export default function ContactPage() {
                   <Mail className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Editorial Proposals</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">vetting@saaspebble.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">vetting@saaspebble.tech</p>
                   </div>
                 </div>
 
@@ -79,7 +100,7 @@ export default function ContactPage() {
                   <ShieldCheck className="h-4 w-4 text-emerald-600 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-sans tracking-wide">Compliance & AdSense Networks</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">compliance@saaspebble.co</p>
+                    <p className="text-xs text-slate-500 mt-0.5">compliance@saaspebble.tech</p>
                   </div>
                 </div>
 
@@ -216,9 +237,10 @@ export default function ContactPage() {
                   <button
                     id="contact-submit-trigger"
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-805 text-white font-sans font-bold text-xs py-3.5 rounded-lg transition-colors hover:cursor-pointer"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-805 text-white font-sans font-bold text-xs py-3.5 rounded-lg transition-colors hover:cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Send Secured Transmission
+                    {isLoading ? 'Transmitting...' : 'Send Secured Transmission'}
                   </button>
 
                 </form>

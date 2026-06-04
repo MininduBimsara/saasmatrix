@@ -218,11 +218,11 @@ export default function Page() {
                                   <img
                                     src={toolA.iconUrl}
                                     alt={toolA.name}
-                                    className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-10"
+                                    className="h-6 w-6 rounded-md object-contain bg-white p-0.5 border border-slate-200 z-10"
                                     referrerPolicy="no-referrer"
                                   />
                                 ) : (
-                                  <div className="h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
+                                  <div className="h-6 w-6 rounded-md bg-rose-500 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-10 border border-slate-200">
                                     {toolA?.name
                                       ?.substring(0, 2)
                                       .toUpperCase() || "A"}
@@ -232,11 +232,11 @@ export default function Page() {
                                   <img
                                     src={toolB.iconUrl}
                                     alt={toolB.name}
-                                    className="h-6 w-6 rounded-full object-contain bg-white border border-slate-200 z-0"
+                                    className="h-6 w-6 rounded-md object-contain bg-white p-0.5 border border-slate-200 z-0"
                                     referrerPolicy="no-referrer"
                                   />
                                 ) : (
-                                  <div className="h-6 w-6 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
+                                  <div className="h-6 w-6 rounded-md bg-slate-700 text-white flex items-center justify-center font-mono text-[8px] font-black uppercase z-0 border border-slate-200">
                                     {toolB?.name
                                       ?.substring(0, 2)
                                       .toUpperCase() || "B"}
@@ -300,11 +300,11 @@ export default function Page() {
                         <img
                           src={resolvedToolA.iconUrl}
                           alt={resolvedToolA.name}
-                          className="h-8 w-8 rounded-full object-contain shrink-0 border border-slate-200"
+                          className="h-8 w-8 rounded-lg object-contain shrink-0 border border-slate-200 bg-white p-1"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-rose-500 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
                           {resolvedToolA.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -334,11 +334,11 @@ export default function Page() {
                         <img
                           src={resolvedToolB.iconUrl}
                           alt={resolvedToolB.name}
-                          className="h-8 w-8 rounded-full object-contain shrink-0 border border-slate-200"
+                          className="h-8 w-8 rounded-lg object-contain shrink-0 border border-slate-200 bg-white p-1"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-slate-700 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase shrink-0">
                           {resolvedToolB.name.substring(0, 2).toUpperCase()}
                         </div>
                       )}
