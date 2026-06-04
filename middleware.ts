@@ -37,8 +37,8 @@ export function middleware(_request: NextRequest) {
     // Allow images from HTTPS origins plus data URIs and blobs (for icon previews)
     "img-src 'self' data: blob: https:",
     "font-src 'self'",
-    // Supabase REST + WebSocket, Lemon Squeezy, Gemini AI endpoints
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.lemonsqueezy.com https://generativelanguage.googleapis.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.googlesyndication.com https://pagead2.googlesyndication.com",
+    // Supabase REST + WebSocket, Lemon Squeezy, Gemini AI endpoints, FormSubmit
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.lemonsqueezy.com https://generativelanguage.googleapis.com https://*.adtrafficquality.google https://*.doubleclick.net https://*.googlesyndication.com https://pagead2.googlesyndication.com https://formsubmit.co",
     // AdSense iframes
     "frame-src https://*.doubleclick.net https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.adtrafficquality.google https://*.google.com",
     "object-src 'none'",
