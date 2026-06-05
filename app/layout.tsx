@@ -54,6 +54,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Pinterest Domain Verification */}
+        <meta name="p:domain_verify" content="7a7df05124be475e1889d62ce572c8fe" />
         {/* Establish connection handshakes with Google's ad servers to keep latency minimal */}
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://googleads.g.doubleclick.net" />

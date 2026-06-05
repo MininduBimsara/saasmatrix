@@ -42,6 +42,21 @@ export default function ComparePage() {
       ]);
       setTools(publishedTools);
       setReviews(publishedReviews);
+
+      // Initialize selected category and tools once published tools are loaded
+      const validCategory = CATEGORIES.find(
+        (c) => publishedTools.filter((t) => t.category === c.slug).length >= 2,
+      )?.slug;
+
+      if (validCategory) {
+        setSelectedCategory(validCategory);
+        const catTools = publishedTools.filter((t) => t.category === validCategory);
+        if (catTools.length >= 2) {
+          setSlugA(catTools[0].slug);
+          setSlugB(catTools[1].slug);
+        }
+      }
+
       setIsLoading(false);
     });
   }, []);
@@ -112,7 +127,6 @@ export default function ComparePage() {
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCat = e.target.value;
     setSelectedCategory(newCat);
-    setIsLoading(true);
     const newTools = tools.filter((t) => t.category === newCat);
     if (newTools.length >= 2) {
       setSlugA(newTools[0].slug);
@@ -218,7 +232,6 @@ export default function ComparePage() {
                   id="select-alpha"
                   value={slugA}
                   onChange={(e) => {
-                    setIsLoading(true);
                     setSlugA(e.target.value);
                   }}
                   className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
@@ -254,7 +267,6 @@ export default function ComparePage() {
                   id="select-beta"
                   value={slugB}
                   onChange={(e) => {
-                    setIsLoading(true);
                     setSlugB(e.target.value);
                   }}
                   className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
