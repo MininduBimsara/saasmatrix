@@ -1,6 +1,7 @@
-﻿import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { CookieConsent } from "@/components/CookieConsent";
+import Script from "next/script";
 import "./globals.css";
 
 // Load Inter smoothly with swap configuration to prevent Cumulative Layout Shift (CLS)
@@ -81,9 +82,23 @@ export default function RootLayout({
         className="font-sans text-slate-600 bg-white antialiased min-h-screen flex flex-col"
         suppressHydrationWarning
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-GSZG18F9RV"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-GSZG18F9RV');
+          `}
+        </Script>
         {children}
         <CookieConsent />
       </body>
     </html>
   );
 }
+
