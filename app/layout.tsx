@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://saaspebble.tech",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png", sizes: "256x256" },
+    ],
+    apple: [
+      { url: "/favicon.png", sizes: "256x256", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "SaaSPebble | Top B2B Software Index & Performance Matrices",
     description:
