@@ -924,7 +924,11 @@ export default function AdminPage() {
     await pushBatchToCloud("blog", parsed.drafts);
 
     const pipelineName = newPipelineName.trim() || `Blog Pipeline - ${new Date().toLocaleTimeString()}`;
-    createPipeline(pipelineName, "blog", parsed.drafts.map(d => d.slug));
+    try {
+      createPipeline(pipelineName, "blog", parsed.drafts.map(d => d.slug));
+    } catch (pipelineErr: any) {
+      console.warn("Pipeline registration skipped:", pipelineErr.message);
+    }
     setNewPipelineName("");
 
     triggerSuccessAlert(
@@ -1173,7 +1177,11 @@ export default function AdminPage() {
     await pushBatchToCloud("review", drafts);
 
     const pipelineName = newPipelineName.trim() || `Review Pipeline - ${new Date().toLocaleTimeString()}`;
-    createPipeline(pipelineName, "review", drafts.map(d => d.slug));
+    try {
+      createPipeline(pipelineName, "review", drafts.map(d => d.slug));
+    } catch (pipelineErr: any) {
+      console.warn("Pipeline registration skipped:", pipelineErr.message);
+    }
     setNewPipelineName("");
 
     triggerSuccessAlert(
@@ -1209,7 +1217,11 @@ export default function AdminPage() {
     await pushBatchToCloud("tool", drafts);
 
     const pipelineName = newPipelineName.trim() || `Tool Pipeline - ${new Date().toLocaleTimeString()}`;
-    createPipeline(pipelineName, "tool", drafts.map(d => d.slug));
+    try {
+      createPipeline(pipelineName, "tool", drafts.map(d => d.slug));
+    } catch (pipelineErr: any) {
+      console.warn("Pipeline registration skipped:", pipelineErr.message);
+    }
     setNewPipelineName("");
 
     triggerSuccessAlert(
@@ -3381,7 +3393,39 @@ export default function AdminPage() {
                       <span>Pipeline Registries</span>
                     </h3>
                     {pipelinesList.length === 0 ? (
-                      <p className="text-xs text-slate-500 italic">No pipelines registered. Upload content below to start one.</p>
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-500 italic">No pipelines registered. Upload content below to start one, or register your existing scheduled items:</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const type = pipelineSubTab;
+                            let slugs: string[] = [];
+                            if (type === "blog") {
+                              slugs = getScheduledBlogPosts(blogsList).map(b => b.slug);
+                            } else if (type === "review") {
+                              slugs = filterScheduled(reviewsList).map((r: any) => r.slug);
+                            } else {
+                              slugs = filterScheduled(toolsList).map((t: any) => t.slug);
+                            }
+                            if (slugs.length === 0) {
+                              triggerSuccessAlert(`No scheduled ${type} items to register.`);
+                              return;
+                            }
+                            const name = `${type.charAt(0).toUpperCase() + type.slice(1)} Pipeline - Existing`;
+                            try {
+                              createPipeline(name, type, slugs);
+                              loadDatabase();
+                              triggerSuccessAlert(`Registered ${slugs.length} scheduled ${type} items as "${name}".`);
+                            } catch (err: any) {
+                              triggerSuccessAlert(`⚠ ${err.message}`);
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer transition-colors"
+                        >
+                          <Layers className="h-3.5 w-3.5" />
+                          <span>Register Existing Scheduled Items ({pipelineSubTab}s)</span>
+                        </button>
+                      </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {pipelinesList.map((pipeline) => (
@@ -3406,9 +3450,14 @@ export default function AdminPage() {
                                 <button
                                   type="button"
                                   onClick={async () => {
-                                    await pausePipeline(pipeline.id);
-                                    loadDatabase();
-                                    triggerSuccessAlert(`Pipeline "${pipeline.name}" paused!`);
+                                    try {
+                                      await pausePipeline(pipeline.id);
+                                      loadDatabase();
+                                      triggerSuccessAlert(`Pipeline "${pipeline.name}" paused!`);
+                                    } catch (err: any) {
+                                      loadDatabase();
+                                      triggerSuccessAlert(`⚠ Pause failed: ${err.message}`);
+                                    }
                                   }}
                                   className="px-2.5 py-1 rounded text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
                                 >
@@ -3418,9 +3467,14 @@ export default function AdminPage() {
                                 <button
                                   type="button"
                                   onClick={async () => {
-                                    await resumePipeline(pipeline.id);
-                                    loadDatabase();
-                                    triggerSuccessAlert(`Pipeline "${pipeline.name}" resumed and schedule shifted!`);
+                                    try {
+                                      await resumePipeline(pipeline.id);
+                                      loadDatabase();
+                                      triggerSuccessAlert(`Pipeline "${pipeline.name}" resumed and schedule shifted!`);
+                                    } catch (err: any) {
+                                      loadDatabase();
+                                      triggerSuccessAlert(`⚠ Resume failed: ${err.message}`);
+                                    }
                                   }}
                                   className="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                                 >
@@ -3429,10 +3483,15 @@ export default function AdminPage() {
                               )}
                               <button
                                 type="button"
-                                onClick={() => {
-                                  deletePipeline(pipeline.id);
-                                  loadDatabase();
-                                  triggerSuccessAlert("Pipeline registry removed.");
+                                onClick={async () => {
+                                  try {
+                                    await deletePipeline(pipeline.id);
+                                    loadDatabase();
+                                    triggerSuccessAlert("Pipeline registry removed.");
+                                  } catch (err: any) {
+                                    loadDatabase();
+                                    triggerSuccessAlert(`⚠ Delete failed: ${err.message}`);
+                                  }
                                 }}
                                 className="px-2.5 py-1 rounded text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
                               >

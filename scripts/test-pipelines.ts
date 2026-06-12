@@ -25,6 +25,7 @@ import {
   resumePipeline,
   getPipelines,
   isItemInPausedPipeline,
+  deletePipeline,
 } from "../lib/pipelineManager";
 
 async function runTests() {
@@ -144,6 +145,44 @@ async function runTests() {
 
   if (Math.abs(actualShift - tenMinutesMs) > 2000) {
     throw new Error("Publication date shift was not calculated/applied correctly!");
+  }
+
+  // 5. Test Deleting a paused pipeline (auto-resumes dates first)
+  console.log("\nStep 5: Testing deletion of a paused pipeline...");
+  // First, delete the first pipeline to release post-1 and post-2
+  await deletePipeline(pipeline.id);
+
+  const tempPipeline = createPipeline("Temp Deletion Campaign", "blog", ["post-2"]);
+  await pausePipeline(tempPipeline.id);
+
+  // Verify post-2 has year 9999 (frozen)
+  const preDeletePost2 = getMergedBlogPosts().find((p) => p.slug === "post-2");
+  const preDeleteYear = new Date(preDeletePost2!.publicationDate).getUTCFullYear();
+  console.log(`   Pre-delete frozen year of post-2: ${preDeleteYear}`);
+  if (preDeleteYear < 9000) {
+    throw new Error("post-2 should be frozen before deletion!");
+  }
+
+  // Delete it
+  await deletePipeline(tempPipeline.id);
+
+  // Verify post-2 publication date is restored (not stuck at 9999)
+  const postDeletePost2 = getMergedBlogPosts().find((p) => p.slug === "post-2");
+  const postDeleteYear = new Date(postDeletePost2!.publicationDate).getUTCFullYear();
+  console.log(`   Post-delete restored year of post-2: ${postDeleteYear}`);
+  if (postDeleteYear >= 9000) {
+    throw new Error("post-2 publication date should be restored after deleting the paused pipeline!");
+  }
+  console.log("   ✅ Deleting paused pipeline successfully restored frozen items.");
+
+  // 6. Test Slug Overlap Guard
+  console.log("\nStep 6: Testing slug overlap guard...");
+  createPipeline("Active Campaign", "blog", ["post-1"]);
+  try {
+    createPipeline("Conflicting Campaign", "blog", ["post-1"]);
+    throw new Error("Should not allow creating a pipeline with an overlapping slug!");
+  } catch (err: any) {
+    console.log(`   ✅ Overlap correctly rejected: "${err.message}"`);
   }
 
   console.log("\n🎉 ALL TESTS PASSED SUCCESSFULLY!");

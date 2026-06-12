@@ -79,6 +79,20 @@ export function createPipeline(
   type: "blog" | "review" | "tool",
   itemSlugs: string[],
 ): ContentPipeline {
+  // Guard: reject slugs that already belong to another pipeline to prevent
+  // conflicting pause/resume state on the same item.
+  const existing = getPipelines();
+  const taken = new Set<string>();
+  for (const p of existing) {
+    for (const s of p.itemSlugs) taken.add(s);
+  }
+  const overlapping = itemSlugs.filter((s) => taken.has(s));
+  if (overlapping.length > 0) {
+    throw new Error(
+      `Cannot create pipeline: ${overlapping.length} slug(s) already belong to another pipeline (${overlapping.slice(0, 3).join(", ")}${overlapping.length > 3 ? "…" : ""}).`,
+    );
+  }
+
   const pipeline: ContentPipeline = {
     id: `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name,
@@ -91,8 +105,25 @@ export function createPipeline(
   return pipeline;
 }
 
-export function deletePipeline(id: string): void {
+/**
+ * Delete a pipeline. If it is currently paused (items frozen to year 9999),
+ * the frozen dates are restored first so items don't stay permanently hidden.
+ */
+export async function deletePipeline(id: string): Promise<void> {
   const current = getPipelines();
+  const pipeline = current.find((p) => p.id === id);
+
+  // If paused with frozen items, restore dates before deleting so items
+  // don't stay stuck at the 9999 sentinel in Supabase forever.
+  if (pipeline && pipeline.status === "paused" && pipeline.pausedAt) {
+    const pausedAtMs = new Date(pipeline.pausedAt).getTime();
+    const shiftMs = Math.max(0, Date.now() - pausedAtMs);
+    await applyPublicationDates(
+      pipeline.type,
+      buildResumeUpdates(pipeline, pausedAtMs, shiftMs),
+    );
+  }
+
   const updated = current.filter((p) => p.id !== id);
   setStorageItem(KEY_PIPELINES, updated);
 }
@@ -130,19 +161,28 @@ async function applyPublicationDates(
       .filter((t) => updates.has(t.slug))
       .map((t) => ({ ...t, publicationDate: updates.get(t.slug)! }));
     affected.forEach((t) => saveCustomTool(t));
-    if (supabase) await pushToolsBatch(affected);
+    if (supabase) {
+      const result = await pushToolsBatch(affected);
+      if (!result.success) throw new Error(`Supabase sync failed (tools): ${result.message}`);
+    }
   } else if (type === "review") {
     const affected = getCustomReviews()
       .filter((r) => updates.has(r.slug))
       .map((r) => ({ ...r, publicationDate: updates.get(r.slug)! }));
     affected.forEach((r) => saveCustomReview(r));
-    if (supabase) await pushReviewsBatch(affected);
+    if (supabase) {
+      const result = await pushReviewsBatch(affected);
+      if (!result.success) throw new Error(`Supabase sync failed (reviews): ${result.message}`);
+    }
   } else {
     const affected = getCustomBlogPosts()
       .filter((b) => updates.has(b.slug))
       .map((b) => ({ ...b, publicationDate: updates.get(b.slug)! }));
     saveCustomBlogPosts(affected);
-    if (supabase) await pushBlogsBatch(affected);
+    if (supabase) {
+      const result = await pushBlogsBatch(affected);
+      if (!result.success) throw new Error(`Supabase sync failed (blogs): ${result.message}`);
+    }
   }
 }
 
