@@ -1,3 +1,4 @@
+import { isItemInPausedPipeline } from "./pipelineManager";
 import { BlogPost } from "./data";
 
 export interface BulkBlogDraft {
@@ -30,9 +31,14 @@ export function getBlogPublicationTimestamp(
 }
 
 export function isBlogPublished(
-  post: Pick<BlogPost, "publicationDate">,
+  post: Pick<BlogPost, "publicationDate"> & { slug?: string },
   now: Date = new Date(),
 ): boolean {
+  if (post && post.slug) {
+    if (isItemInPausedPipeline(post.slug)) {
+      return false;
+    }
+  }
   const timestamp = getBlogPublicationTimestamp(post.publicationDate);
   if (timestamp === null) return true;
   return timestamp <= now.getTime();

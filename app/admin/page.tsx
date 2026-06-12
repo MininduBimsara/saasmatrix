@@ -61,6 +61,14 @@ import {
 } from "@/lib/supabaseDb";
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 import { logAdminAction } from "@/lib/auditLog";
+import {
+  getPipelines,
+  createPipeline,
+  pausePipeline,
+  resumePipeline,
+  deletePipeline,
+  ContentPipeline,
+} from "@/lib/pipelineManager";
 
 type ToolFormState = Omit<
   Tool,
@@ -348,6 +356,10 @@ export default function AdminPage() {
   // Blog markdown live preview mode
   const [blogPreviewMode, setBlogPreviewMode] = useState<boolean>(false);
 
+  // Pipeline registry state
+  const [pipelinesList, setPipelinesList] = useState<ContentPipeline[]>([]);
+  const [newPipelineName, setNewPipelineName] = useState<string>("");
+
   // Reload trigger to refresh the dataset asynchronously from index transactions
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
 
@@ -358,6 +370,7 @@ export default function AdminPage() {
       setToolsList(db.getMergedTools());
       setReviewsList(db.getMergedReviews());
       setBlogsList(db.getMergedBlogPosts());
+      setPipelinesList(getPipelines());
 
       const mergedT = db.getMergedTools();
       if (mergedT.length >= 2) {
@@ -910,8 +923,12 @@ export default function AdminPage() {
     db.saveCustomBlogPosts(parsed.drafts);
     await pushBatchToCloud("blog", parsed.drafts);
 
+    const pipelineName = newPipelineName.trim() || `Blog Pipeline - ${new Date().toLocaleTimeString()}`;
+    createPipeline(pipelineName, "blog", parsed.drafts.map(d => d.slug));
+    setNewPipelineName("");
+
     triggerSuccessAlert(
-      `Queued ${parsed.drafts.length} articles. Each post is spaced ${bulkBlogIntervalHours} hours apart starting ${formatBlogPublicationDate(parsed.drafts[0].publicationDate)}.`,
+      `Queued ${parsed.drafts.length} articles in pipeline "${pipelineName}". Spaced ${bulkBlogIntervalHours}h apart starting ${formatBlogPublicationDate(parsed.drafts[0].publicationDate)}.`,
     );
 
     setBulkBlogDraftJson("[]");
@@ -1154,8 +1171,13 @@ export default function AdminPage() {
     );
 
     await pushBatchToCloud("review", drafts);
+
+    const pipelineName = newPipelineName.trim() || `Review Pipeline - ${new Date().toLocaleTimeString()}`;
+    createPipeline(pipelineName, "review", drafts.map(d => d.slug));
+    setNewPipelineName("");
+
     triggerSuccessAlert(
-      `Queued ${drafts.length} reviews, spaced ${bulkReviewIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
+      `Queued ${drafts.length} reviews in pipeline "${pipelineName}". Spaced ${bulkReviewIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
     );
     setBulkReviewJson("[]");
     loadDatabase();
@@ -1185,8 +1207,13 @@ export default function AdminPage() {
     );
 
     await pushBatchToCloud("tool", drafts);
+
+    const pipelineName = newPipelineName.trim() || `Tool Pipeline - ${new Date().toLocaleTimeString()}`;
+    createPipeline(pipelineName, "tool", drafts.map(d => d.slug));
+    setNewPipelineName("");
+
     triggerSuccessAlert(
-      `Queued ${drafts.length} tools, spaced ${bulkToolIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
+      `Queued ${drafts.length} tools in pipeline "${pipelineName}". Spaced ${bulkToolIntervalHours}h apart starting ${formatScheduleDate(drafts[0].publicationDate)}.`,
     );
     setBulkToolJson("[]");
     loadDatabase();
@@ -3347,6 +3374,77 @@ export default function AdminPage() {
                     </p>
                   </div>
 
+                  {/* Pipeline Registry Section */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Layers className="text-indigo-600 h-4 w-4" />
+                      <span>Pipeline Registries</span>
+                    </h3>
+                    {pipelinesList.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic">No pipelines registered. Upload content below to start one.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {pipelinesList.map((pipeline) => (
+                          <div key={pipeline.id} className="border border-slate-100 rounded-lg p-3 space-y-3 bg-slate-50/50">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900">{pipeline.name}</h4>
+                                <p className="text-[10px] text-slate-500 uppercase font-semibold mt-0.5">
+                                  Type: {pipeline.type} | {pipeline.itemSlugs.length} items
+                                </p>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                pipeline.status === "active"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800"
+                              }`}>
+                                {pipeline.status}
+                              </span>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              {pipeline.status === "active" ? (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await pausePipeline(pipeline.id);
+                                    loadDatabase();
+                                    triggerSuccessAlert(`Pipeline "${pipeline.name}" paused!`);
+                                  }}
+                                  className="px-2.5 py-1 rounded text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
+                                >
+                                  Pause
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await resumePipeline(pipeline.id);
+                                    loadDatabase();
+                                    triggerSuccessAlert(`Pipeline "${pipeline.name}" resumed and schedule shifted!`);
+                                  }}
+                                  className="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                >
+                                  Resume
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  deletePipeline(pipeline.id);
+                                  loadDatabase();
+                                  triggerSuccessAlert("Pipeline registry removed.");
+                                }}
+                                className="px-2.5 py-1 rounded text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Sub-tab selector: the three content sections */}
                   <div className="flex flex-wrap gap-2">
                     {(
@@ -3387,7 +3485,19 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-1 md:col-span-2">
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Pipeline Name (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Q3 Launch Campaign"
+                              value={newPipelineName}
+                              onChange={(e) => setNewPipelineName(e.target.value)}
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="block font-bold text-slate-700">
                               Batch start date/time
                             </label>
@@ -3633,7 +3743,19 @@ export default function AdminPage() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-1 md:col-span-2">
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Pipeline Name (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Comparison Campaign"
+                              value={newPipelineName}
+                              onChange={(e) => setNewPipelineName(e.target.value)}
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="block font-bold text-slate-700">
                               Batch start date/time
                             </label>
@@ -3812,7 +3934,19 @@ export default function AdminPage() {
                           </h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-1 md:col-span-2">
+                          <div className="space-y-1">
+                            <label className="block font-bold text-slate-700">
+                              Pipeline Name (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Tools Batch A"
+                              value={newPipelineName}
+                              onChange={(e) => setNewPipelineName(e.target.value)}
+                              className="w-full p-2 border border-slate-200 bg-white rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="block font-bold text-slate-700">
                               Batch start date/time
                             </label>

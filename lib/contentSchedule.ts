@@ -14,6 +14,8 @@
 // re-evaluates "now" against each item's publication date.
 // ============================================================
 
+import { isItemInPausedPipeline } from "./pipelineManager";
+
 export interface Schedulable {
   publicationDate?: string;
 }
@@ -33,6 +35,11 @@ export function isPublished(
   item: Schedulable,
   now: Date = new Date(),
 ): boolean {
+  if (item && "slug" in item && typeof (item as any).slug === "string") {
+    if (isItemInPausedPipeline((item as any).slug)) {
+      return false;
+    }
+  }
   const timestamp = getPublicationTimestamp(item.publicationDate);
   if (timestamp === null) return true;
   return timestamp <= now.getTime();
