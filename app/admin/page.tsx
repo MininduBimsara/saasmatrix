@@ -27,6 +27,9 @@ import {
   AlertCircle,
   Loader2,
   Zap,
+  Play,
+  Pause,
+  Clock,
 } from "lucide-react";
 import { Tool, Review, BlogPost, CATEGORIES, CategorySlug } from "@/lib/data";
 import {
@@ -359,6 +362,26 @@ export default function AdminPage() {
   // Pipeline registry state
   const [pipelinesList, setPipelinesList] = useState<ContentPipeline[]>([]);
   const [newPipelineName, setNewPipelineName] = useState<string>("");
+  const [pipelineStatusFilter, setPipelineStatusFilter] = useState<
+    "all" | "active" | "paused"
+  >("all");
+
+  const pipelineCounts = useMemo(
+    () => ({
+      all: pipelinesList.length,
+      active: pipelinesList.filter((p) => p.status === "active").length,
+      paused: pipelinesList.filter((p) => p.status === "paused").length,
+    }),
+    [pipelinesList],
+  );
+
+  const visiblePipelines = useMemo(
+    () =>
+      pipelineStatusFilter === "all"
+        ? pipelinesList
+        : pipelinesList.filter((p) => p.status === pipelineStatusFilter),
+    [pipelinesList, pipelineStatusFilter],
+  );
 
   // Reload trigger to refresh the dataset asynchronously from index transactions
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
@@ -1229,6 +1252,39 @@ export default function AdminPage() {
     );
     setBulkToolJson("[]");
     loadDatabase();
+  };
+
+  // Wrap any scheduled items that aren't yet part of a pipeline (e.g. batches
+  // uploaded before the registry existed) into a new pipeline for the active
+  // sub-tab, so they gain Pause/Resume controls. Already-registered slugs are
+  // skipped so an item never ends up in two pipelines.
+  const handleRegisterExisting = () => {
+    const type = pipelineSubTab;
+    const registered = new Set(pipelinesList.flatMap((p) => p.itemSlugs));
+
+    let scheduledSlugs: string[] = [];
+    if (type === "blog") {
+      scheduledSlugs = getScheduledBlogPosts(blogsList).map((b) => b.slug);
+    } else if (type === "review") {
+      scheduledSlugs = filterScheduled(reviewsList).map((r: any) => r.slug);
+    } else {
+      scheduledSlugs = filterScheduled(toolsList).map((t: any) => t.slug);
+    }
+
+    const slugs = scheduledSlugs.filter((s) => !registered.has(s));
+    if (slugs.length === 0) {
+      triggerSuccessAlert(`No unregistered scheduled ${type} items to register.`);
+      return;
+    }
+
+    const name = `${type.charAt(0).toUpperCase() + type.slice(1)} Pipeline - Existing`;
+    try {
+      createPipeline(name, type, slugs);
+      loadDatabase();
+      triggerSuccessAlert(`Registered ${slugs.length} scheduled ${type} items as "${name}".`);
+    } catch (err: any) {
+      triggerSuccessAlert(`⚠ ${err.message}`);
+    }
   };
 
   const handleRescheduleReviewPipeline = async (e: React.FormEvent) => {
@@ -3388,118 +3444,179 @@ export default function AdminPage() {
 
                   {/* Pipeline Registry Section */}
                   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Layers className="text-indigo-600 h-4 w-4" />
-                      <span>Pipeline Registries</span>
-                    </h3>
-                    {pipelinesList.length === 0 ? (
-                      <div className="space-y-3">
-                        <p className="text-xs text-slate-500 italic">No pipelines registered. Upload content below to start one, or register your existing scheduled items:</p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const type = pipelineSubTab;
-                            let slugs: string[] = [];
-                            if (type === "blog") {
-                              slugs = getScheduledBlogPosts(blogsList).map(b => b.slug);
-                            } else if (type === "review") {
-                              slugs = filterScheduled(reviewsList).map((r: any) => r.slug);
-                            } else {
-                              slugs = filterScheduled(toolsList).map((t: any) => t.slug);
-                            }
-                            if (slugs.length === 0) {
-                              triggerSuccessAlert(`No scheduled ${type} items to register.`);
-                              return;
-                            }
-                            const name = `${type.charAt(0).toUpperCase() + type.slice(1)} Pipeline - Existing`;
-                            try {
-                              createPipeline(name, type, slugs);
-                              loadDatabase();
-                              triggerSuccessAlert(`Registered ${slugs.length} scheduled ${type} items as "${name}".`);
-                            } catch (err: any) {
-                              triggerSuccessAlert(`⚠ ${err.message}`);
-                            }
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer transition-colors"
-                        >
-                          <Layers className="h-3.5 w-3.5" />
-                          <span>Register Existing Scheduled Items ({pipelineSubTab}s)</span>
-                        </button>
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <Layers className="text-indigo-600 h-4 w-4" />
+                          <span>Pipeline Registries</span>
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-1 max-w-md">
+                          Pause a running batch to hold its remaining drops, or resume a
+                          paused one — resuming shifts the rest of the schedule forward by
+                          the pause duration so the staggering is preserved.
+                        </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleRegisterExisting}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer transition-colors"
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        <span>Register existing {pipelineSubTab}s</span>
+                      </button>
+                    </div>
+
+                    {/* Status filter */}
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        [
+                          ["all", "All", pipelineCounts.all],
+                          ["active", "Active", pipelineCounts.active],
+                          ["paused", "Paused", pipelineCounts.paused],
+                        ] as const
+                      ).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setPipelineStatusFilter(key)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                            pipelineStatusFilter === key
+                              ? "bg-slate-900 border-slate-900 text-white"
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {key === "active" && <Play className="h-3 w-3" />}
+                          {key === "paused" && <Pause className="h-3 w-3" />}
+                          <span>{label}</span>
+                          <span
+                            className={`px-1.5 rounded-full text-[10px] font-black ${
+                              pipelineStatusFilter === key
+                                ? "bg-white/20 text-white"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {pipelinesList.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic">
+                        No pipelines registered. Upload content below to start one, or use
+                        “Register existing {pipelineSubTab}s” above to wrap items you
+                        already scheduled.
+                      </p>
+                    ) : visiblePipelines.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic">
+                        No {pipelineStatusFilter} pipelines.
+                      </p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {pipelinesList.map((pipeline) => (
-                          <div key={pipeline.id} className="border border-slate-100 rounded-lg p-3 space-y-3 bg-slate-50/50">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="text-xs font-bold text-slate-900">{pipeline.name}</h4>
-                                <p className="text-[10px] text-slate-500 uppercase font-semibold mt-0.5">
-                                  Type: {pipeline.type} | {pipeline.itemSlugs.length} items
-                                </p>
+                        {visiblePipelines.map((pipeline) => {
+                          const isPaused = pipeline.status === "paused";
+                          return (
+                            <div
+                              key={pipeline.id}
+                              className={`border rounded-xl p-4 space-y-3 transition-colors ${
+                                isPaused
+                                  ? "border-amber-200 bg-amber-50/40"
+                                  : "border-slate-200 bg-slate-50/60"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-slate-900 truncate">
+                                    {pipeline.name}
+                                  </h4>
+                                  <p className="text-[10px] text-slate-500 uppercase font-semibold mt-0.5 tracking-wide">
+                                    {pipeline.type} · {pipeline.itemSlugs.length} items
+                                  </p>
+                                </div>
+                                <span
+                                  className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                    isPaused
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-emerald-100 text-emerald-800"
+                                  }`}
+                                >
+                                  {isPaused ? (
+                                    <Pause className="h-2.5 w-2.5" />
+                                  ) : (
+                                    <Play className="h-2.5 w-2.5" />
+                                  )}
+                                  {pipeline.status}
+                                </span>
                               </div>
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                pipeline.status === "active"
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : "bg-amber-100 text-amber-800"
-                              }`}>
-                                {pipeline.status}
-                              </span>
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                              {pipeline.status === "active" ? (
+
+                              <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                <span>
+                                  {isPaused && pipeline.pausedAt
+                                    ? `Paused ${new Date(pipeline.pausedAt).toLocaleString()}`
+                                    : `Created ${new Date(pipeline.createdAt).toLocaleDateString()}`}
+                                </span>
+                              </div>
+
+                              <div className="flex gap-2 justify-end pt-2 border-t border-slate-200/70">
+                                {isPaused ? (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await resumePipeline(pipeline.id);
+                                        loadDatabase();
+                                        triggerSuccessAlert(`Pipeline "${pipeline.name}" resumed and schedule shifted!`);
+                                      } catch (err: any) {
+                                        loadDatabase();
+                                        triggerSuccessAlert(`⚠ Resume failed: ${err.message}`);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                  >
+                                    <Play className="h-3 w-3" />
+                                    Resume
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await pausePipeline(pipeline.id);
+                                        loadDatabase();
+                                        triggerSuccessAlert(`Pipeline "${pipeline.name}" paused!`);
+                                      } catch (err: any) {
+                                        loadDatabase();
+                                        triggerSuccessAlert(`⚠ Pause failed: ${err.message}`);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
+                                  >
+                                    <Pause className="h-3 w-3" />
+                                    Pause
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={async () => {
                                     try {
-                                      await pausePipeline(pipeline.id);
+                                      await deletePipeline(pipeline.id);
                                       loadDatabase();
-                                      triggerSuccessAlert(`Pipeline "${pipeline.name}" paused!`);
+                                      triggerSuccessAlert("Pipeline registry removed.");
                                     } catch (err: any) {
                                       loadDatabase();
-                                      triggerSuccessAlert(`⚠ Pause failed: ${err.message}`);
+                                      triggerSuccessAlert(`⚠ Delete failed: ${err.message}`);
                                     }
                                   }}
-                                  className="px-2.5 py-1 rounded text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
                                 >
-                                  Pause
+                                  <Trash2 className="h-3 w-3" />
+                                  Delete
                                 </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      await resumePipeline(pipeline.id);
-                                      loadDatabase();
-                                      triggerSuccessAlert(`Pipeline "${pipeline.name}" resumed and schedule shifted!`);
-                                    } catch (err: any) {
-                                      loadDatabase();
-                                      triggerSuccessAlert(`⚠ Resume failed: ${err.message}`);
-                                    }
-                                  }}
-                                  className="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                                >
-                                  Resume
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    await deletePipeline(pipeline.id);
-                                    loadDatabase();
-                                    triggerSuccessAlert("Pipeline registry removed.");
-                                  } catch (err: any) {
-                                    loadDatabase();
-                                    triggerSuccessAlert(`⚠ Delete failed: ${err.message}`);
-                                  }
-                                }}
-                                className="px-2.5 py-1 rounded text-[10px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
-                              >
-                                Delete
-                              </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
