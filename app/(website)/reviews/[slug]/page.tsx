@@ -1,7 +1,13 @@
-﻿import React from 'react';
+import React from 'react';
 import { Metadata } from 'next';
-import { REVIEWS, TOOLS } from '@/lib/data';
+import { getPublishedReviews, getAllTools } from '@/lib/contentSource';
+import { Tool } from '@/lib/data';
 import ReviewDetailsClient from '@/components/ReviewDetailsClient';
+
+// Render per-request so scheduled/paused items are evaluated against the
+// current time (drip-publish + pipeline pause/resume). Crawlers still receive
+// fully server-rendered HTML.
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -10,7 +16,20 @@ interface PageProps {
 // Generate rich, CRO-optimized dynamic meta headers for crawlers
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const review = REVIEWS.find((r) => r.slug === slug);
+  
+  let review = null;
+  let tools: Tool[] = [];
+  try {
+    const [reviews, allTools] = await Promise.all([
+      getPublishedReviews(),
+      getAllTools()
+    ]);
+    review = reviews.find((r) => r.slug === slug);
+    tools = allTools;
+  } catch (error) {
+    console.error("Metadata generation error for review:", error);
+  }
+
 
   if (!review) {
     return {
@@ -20,8 +39,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   // Resolve Tool names to dynamically enrich indexing metrics
-  const toolA = TOOLS.find((t) => t.slug === review.toolA);
-  const toolB = TOOLS.find((t) => t.slug === review.toolB);
+  const toolA = tools.find((t) => t.slug === review.toolA);
+  const toolB = tools.find((t) => t.slug === review.toolB);
 
   const toolAName = toolA?.name || review.toolA;
   const toolBName = toolB?.name || review.toolB;
@@ -56,17 +75,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-// Export baseline paths for static build exportation pipelines
-export async function generateStaticParams() {
-  return REVIEWS.map((review) => ({
-    slug: review.slug,
-  }));
-}
-
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
-  const staticReview = REVIEWS.find((r) => r.slug === slug) || null;
+  
+  let staticReview = null;
+  try {
+    const reviews = await getPublishedReviews();
+    staticReview = reviews.find((r) => r.slug === slug) || null;
+  } catch (error) {
+    console.error("Page fetch error for review:", error);
+  }
 
   return <ReviewDetailsClient staticReview={staticReview} slug={slug} />;
 }
+
 

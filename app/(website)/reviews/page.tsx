@@ -1,29 +1,33 @@
-'use client';
-
-import React, { useMemo, useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdContainer } from '@/components/AdContainer';
 import { SectionHeading } from '@/components/SectionHeading';
 import { ReviewCard } from '@/components/ReviewCard';
-import { ReviewCardSkeleton } from '@/components/Skeletons';
+import { getPublishedReviews } from '@/lib/contentSource';
 import { Review } from '@/lib/data';
 
-export default function ReviewsPage() {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeReviews, setActiveReviews] = useState<Review[]>([]);
+// Render per-request so the published set reflects drip-publish timing and
+// pipeline pause/resume immediately (still full server-rendered HTML for SEO).
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    import('@/lib/contentSource').then(async (src) => {
-      setActiveReviews(await src.getPublishedReviews());
-      setIsLoading(false);
-    });
-  }, []);
+export const metadata = {
+  title: 'Reviews | SaaSPebble',
+  description: 'Unbiased B2B SaaS comparison matrices and verified reviews.',
+  alternates: { canonical: 'https://saaspebble.tech/reviews' },
+};
 
-  const sortedReviews = useMemo(() => {
-    return [...activeReviews].sort((a, b) => new Date(b.publicationDate).getTime() - new Date(a.publicationDate).getTime());
-  }, [activeReviews]);
+export default async function ReviewsPage() {
+  let activeReviews: Review[] = [];
+  try {
+    activeReviews = await getPublishedReviews();
+  } catch (error) {
+    console.error("Reviews page fetch error:", error);
+  }
+
+
+  const sortedReviews = [...activeReviews].sort((a, b) => new Date(b.publicationDate).getTime() - new Date(a.publicationDate).getTime());
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -70,15 +74,14 @@ export default function ReviewsPage() {
 
           {/* Archive Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {isLoading ? (
-              // Fill with 6 standard default cards skeletons matching actual item counts for layout continuity
-              Array.from({ length: 6 }).map((_, idx) => (
-                <ReviewCardSkeleton key={idx} variant="default" />
-              ))
-            ) : (
+            {sortedReviews.length > 0 ? (
               sortedReviews.map((review) => (
                 <ReviewCard key={review.slug} review={review} variant="default" />
               ))
+            ) : (
+              <div className="col-span-full py-12 text-center text-xs font-mono text-slate-450 italic">
+                No active comparative matrices registered in database.
+              </div>
             )}
           </div>
 
@@ -94,3 +97,4 @@ export default function ReviewsPage() {
     </div>
   );
 }
+

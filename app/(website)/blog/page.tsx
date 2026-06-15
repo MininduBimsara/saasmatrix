@@ -1,34 +1,35 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AdContainer } from "@/components/AdContainer";
 import { SectionHeading } from "@/components/SectionHeading";
-import { BlogPost } from "@/lib/data";
+import { getPublishedBlogPosts } from "@/lib/contentSource";
 import { formatBlogPublicationDate } from "@/lib/blogSchedule";
+import { BlogPost } from "@/lib/data";
 
-export default function BlogIndexPage() {
-  const [activePosts, setActivePosts] = React.useState<BlogPost[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+// Render per-request so the published set reflects drip-publish timing and
+// pipeline pause/resume immediately (still full server-rendered HTML for SEO).
+export const dynamic = 'force-dynamic';
 
-  React.useEffect(() => {
-    import("@/lib/contentSource").then(async (src) => {
-      setActivePosts(await src.getPublishedBlogPosts());
-      setIsLoading(false);
-    });
-  }, []);
+export const metadata = {
+  title: 'Blog | SaaSPebble',
+  description: 'SaaS procurement insights, checklists, and software licensing guides.',
+  alternates: { canonical: 'https://saaspebble.tech/blog' },
+};
+
+export default async function BlogIndexPage() {
+  let activePosts: BlogPost[] = [];
+  try {
+    activePosts = await getPublishedBlogPosts();
+  } catch (error) {
+    console.error("Blog page fetch error:", error);
+  }
+
 
   let content;
 
-  if (isLoading) {
-    content = (
-      <div className="p-12 text-center text-xs font-mono text-slate-400">
-        Refactoring matrix indexes...
-      </div>
-    );
-  } else if (activePosts.length > 0) {
+  if (activePosts.length > 0) {
     content = activePosts.map((post) => (
       <Link
         id={`blog-post-row-${post.slug}`}
@@ -68,7 +69,7 @@ export default function BlogIndexPage() {
     ));
   } else {
     content = (
-      <div className="p-12 text-center text-xs font-mono text-slate-400">
+      <div className="p-12 text-center text-xs font-mono text-slate-405 italic">
         No issues registered in the workspace index.
       </div>
     );
@@ -109,7 +110,7 @@ export default function BlogIndexPage() {
                 className="text-blue-600 font-semibold hover:underline"
               >
                 Reviews index
-              </Link>{" "}
+              </Link>{' '}
               to research specific products, or{" "}
               <Link
                 href="/newsletter"
@@ -150,3 +151,4 @@ export default function BlogIndexPage() {
     </div>
   );
 }
+

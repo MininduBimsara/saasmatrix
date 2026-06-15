@@ -1,14 +1,13 @@
-﻿import React from 'react';
+import React from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { CATEGORIES, TOOLS, REVIEWS, getCategory } from '@/lib/data';
+import { CATEGORIES, getCategory, Tool, Review } from '@/lib/data';
+import { getPublishedTools, getPublishedReviews } from '@/lib/contentSource';
 import { CategoryPageClient } from '@/components/CategoryPageClient';
 
-export async function generateStaticParams() {
-  return CATEGORIES.map((cat) => ({
-    slug: cat.slug,
-  }));
-}
+// Render per-request so category tool/review lists reflect drip-publish timing
+// and pipeline pause/resume immediately (still full server-rendered HTML).
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -52,9 +51,21 @@ export default async function CategoryPage({ params }: PageProps) {
     return notFound();
   }
 
-  // Filter tools and reviews for this category
-  const categoryTools = TOOLS.filter((tool) => tool.category === category.slug);
-  const categoryReviews = REVIEWS.filter((review) => review.category === category.slug);
+  // Filter tools and reviews for this category from Supabase on the server side
+  let categoryTools: Tool[] = [];
+  let categoryReviews: Review[] = [];
+  try {
+    const [allTools, allReviews] = await Promise.all([
+      getPublishedTools(),
+      getPublishedReviews(),
+    ]);
+    categoryTools = allTools.filter((tool) => tool.category === category.slug);
+    categoryReviews = allReviews.filter((review) => review.category === category.slug);
+  } catch (error) {
+    console.error(`Category page server pre-fetch error for ${slug}:`, error);
+  }
+
+
   const relatedCategories = CATEGORIES.filter((c) => c.slug !== category.slug);
 
   return (
@@ -66,3 +77,4 @@ export default async function CategoryPage({ params }: PageProps) {
     />
   );
 }
+

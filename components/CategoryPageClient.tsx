@@ -24,7 +24,7 @@ export function CategoryPageClient({
   categoryReviews,
   relatedCategories,
 }: CategoryPageClientProps) {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(categoryTools.length === 0 && categoryReviews.length === 0);
   const [tools, setTools] = useState<Tool[]>(categoryTools);
   const [reviews, setReviews] = useState<Review[]>(categoryReviews);
 
@@ -39,6 +39,7 @@ export function CategoryPageClient({
       setIsLoading(false);
     });
   }, [category.slug]);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-white">

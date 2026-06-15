@@ -1,7 +1,12 @@
-﻿import React from 'react';
+import React from 'react';
 import type { Metadata } from 'next';
-import { BLOG_POSTS } from '@/lib/data';
+import { getPublishedBlogPosts } from '@/lib/contentSource';
 import BlogDetailsClient from '@/components/BlogDetailsClient';
+
+// Render per-request so scheduled/paused posts are evaluated against the
+// current time (drip-publish + pipeline pause/resume). Crawlers still receive
+// fully server-rendered HTML.
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -9,7 +14,14 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = BLOG_POSTS.find((p) => p.slug === slug);
+  
+  let post = null;
+  try {
+    const posts = await getPublishedBlogPosts();
+    post = posts.find((p) => p.slug === slug);
+  } catch (error) {
+    console.error("Metadata generation error for blog:", error);
+  }
 
   if (!post) {
     return {
@@ -40,15 +52,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export async function generateStaticParams() {
-  return BLOG_POSTS.map((post) => ({
-    slug: post.slug,
-  }));
-}
-
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const staticPost = BLOG_POSTS.find((p) => p.slug === slug) || null;
+  
+  let staticPost = null;
+  try {
+    const posts = await getPublishedBlogPosts();
+    staticPost = posts.find((p) => p.slug === slug) || null;
+  } catch (error) {
+    console.error("Page fetch error for blog:", error);
+  }
 
   const jsonLd = staticPost
     ? {
@@ -83,3 +96,4 @@ export default async function BlogPostPage({ params }: PageProps) {
     </>
   );
 }
+

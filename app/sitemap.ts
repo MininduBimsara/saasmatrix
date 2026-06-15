@@ -1,9 +1,24 @@
-﻿import { MetadataRoute } from 'next'
-import { REVIEWS, BLOG_POSTS, CATEGORIES } from '@/lib/data'
+import { MetadataRoute } from 'next'
+import { CATEGORIES, Review, BlogPost } from '@/lib/data'
+import { getPublishedReviews, getPublishedBlogPosts } from '@/lib/contentSource'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Generate per-request so paused/scheduled items are excluded from the sitemap
+// in line with what is actually published at crawl time.
+export const dynamic = 'force-dynamic'
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://saaspebble.tech'
   const now = new Date()
+
+  let reviews: Review[] = []
+  let blogPosts: BlogPost[] = []
+  try {
+    reviews = await getPublishedReviews()
+    blogPosts = await getPublishedBlogPosts()
+  } catch (error) {
+    console.error("Sitemap database fetch error:", error)
+  }
+
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: base, lastModified: now, changeFrequency: 'daily', priority: 1 },
@@ -20,14 +35,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/disclaimers`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ]
 
-  const reviewRoutes: MetadataRoute.Sitemap = REVIEWS.map((r) => ({
+  const reviewRoutes: MetadataRoute.Sitemap = reviews.map((r) => ({
     url: `${base}/reviews/${r.slug}`,
     lastModified: new Date(r.publicationDate),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
-  const blogRoutes: MetadataRoute.Sitemap = BLOG_POSTS.map((p) => ({
+  const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((p) => ({
     url: `${base}/blog/${p.slug}`,
     lastModified: new Date(p.publicationDate),
     changeFrequency: 'monthly' as const,
@@ -43,3 +58,4 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [...staticRoutes, ...reviewRoutes, ...blogRoutes, ...categoryRoutes]
 }
+
