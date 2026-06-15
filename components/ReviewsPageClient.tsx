@@ -116,6 +116,11 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
     setCurrentPage(1);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Filtered and sorted list computations
   const filteredAndSortedReviews = useMemo(() => {
     let result = [...reviews];
@@ -450,7 +455,7 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
                       <div className="flex items-center gap-2">
                         {/* Prev Button */}
                         <button
-                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                           disabled={currentPage === 1}
                           className="p-2.5 bg-white border border-slate-200 hover:border-slate-300 disabled:opacity-30 disabled:hover:border-slate-200 text-slate-600 rounded-xl transition-all font-semibold flex items-center justify-center disabled:cursor-not-allowed shadow-2xs hover:shadow-xs"
                           aria-label="Previous Page"
@@ -470,7 +475,7 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
                           return (
                             <button
                               key={`page-${pageNumber}`}
-                              onClick={() => setCurrentPage(pageNumber as number)}
+                              onClick={() => handlePageChange(pageNumber as number)}
                               className={`h-9 min-w-9 px-3.5 text-xs font-bold font-mono rounded-xl border transition-all shadow-2xs hover:shadow-xs ${
                                 currentPage === pageNumber
                                   ? 'bg-rose-500 border-rose-500 text-white hover:bg-rose-600'
@@ -484,7 +489,7 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
 
                         {/* Next Button */}
                         <button
-                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                           disabled={currentPage === totalPages}
                           className="p-2.5 bg-white border border-slate-200 hover:border-slate-300 disabled:opacity-30 disabled:hover:border-slate-200 text-slate-600 rounded-xl transition-all font-semibold flex items-center justify-center disabled:cursor-not-allowed shadow-2xs hover:shadow-xs"
                           aria-label="Next Page"
