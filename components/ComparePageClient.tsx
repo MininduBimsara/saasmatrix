@@ -40,6 +40,18 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
 
   useEffect(() => {
+    const hasCustomData = typeof window !== "undefined" && (
+      !!localStorage.getItem("saasrooms_custom_tools") ||
+      !!localStorage.getItem("saasrooms_custom_reviews")
+    );
+
+    if (initialTools.length > 0 && initialReviews.length > 0 && !hasCustomData) {
+      setTools(initialTools);
+      setReviews(initialReviews);
+      setIsLoading(false);
+      return;
+    }
+
     import("@/lib/contentSource").then(async (src) => {
       const [publishedTools, publishedReviews] = await Promise.all([
         src.getPublishedTools(),
@@ -66,7 +78,7 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
 
       setIsLoading(false);
     });
-  }, [initialTools.length]);
+  }, [initialTools, initialReviews]);
 
   const availableCategories = useMemo(() => {
     return CATEGORIES.filter(

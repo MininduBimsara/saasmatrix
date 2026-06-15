@@ -29,6 +29,18 @@ export function CategoryPageClient({
   const [reviews, setReviews] = useState<Review[]>(categoryReviews);
 
   useEffect(() => {
+    const hasCustomData = typeof window !== "undefined" && (
+      !!localStorage.getItem("saasrooms_custom_tools") ||
+      !!localStorage.getItem("saasrooms_custom_reviews")
+    );
+
+    if (categoryTools.length > 0 && categoryReviews.length > 0 && !hasCustomData) {
+      setTools(categoryTools);
+      setReviews(categoryReviews);
+      setIsLoading(false);
+      return;
+    }
+
     import('@/lib/contentSource').then(async (src) => {
       const [allTools, allReviews] = await Promise.all([
         src.getPublishedTools(),
@@ -38,7 +50,7 @@ export function CategoryPageClient({
       setReviews(allReviews.filter((r) => r.category === category.slug));
       setIsLoading(false);
     });
-  }, [category.slug]);
+  }, [category.slug, categoryTools, categoryReviews]);
 
 
   return (

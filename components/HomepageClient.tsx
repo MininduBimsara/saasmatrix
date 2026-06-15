@@ -60,6 +60,18 @@ export default function HomepageClient({ initialReviews, initialTools }: Homepag
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    const hasCustomData = typeof window !== "undefined" && (
+      !!localStorage.getItem("saasrooms_custom_tools") ||
+      !!localStorage.getItem("saasrooms_custom_reviews")
+    );
+
+    if (initialReviews.length > 0 && initialTools.length > 0 && !hasCustomData) {
+      setActiveReviews(initialReviews);
+      setActiveTools(initialTools);
+      setIsLoading(false);
+      return;
+    }
+
     import("@/lib/contentSource").then(async (src) => {
       const [reviews, tools] = await Promise.all([
         src.getPublishedReviews(),
@@ -69,7 +81,7 @@ export default function HomepageClient({ initialReviews, initialTools }: Homepag
       setActiveTools(tools);
       setIsLoading(false);
     });
-  }, []);
+  }, [initialReviews, initialTools]);
 
   // Compute selected review and details
   const selectedReviewObj = useMemo(() => {

@@ -22,16 +22,36 @@ import {
 interface ReviewDetailsClientProps {
   staticReview: any | null;
   slug: string;
+  initialToolA?: any;
+  initialToolB?: any;
 }
 
-export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetailsClientProps) {
+export default function ReviewDetailsClient({
+  staticReview,
+  slug,
+  initialToolA,
+  initialToolB,
+}: ReviewDetailsClientProps) {
   const router = useRouter();
   const [review, setReview] = useState<any | null>(staticReview);
-  const [toolA, setToolA] = useState<any | null>(null);
-  const [toolB, setToolB] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [toolA, setToolA] = useState<any | null>(initialToolA || null);
+  const [toolB, setToolB] = useState<any | null>(initialToolB || null);
+  const [isLoading, setIsLoading] = useState<boolean>(!staticReview);
 
   useEffect(() => {
+    const hasCustomData = typeof window !== "undefined" && (
+      !!localStorage.getItem("saasrooms_custom_tools") ||
+      !!localStorage.getItem("saasrooms_custom_reviews")
+    );
+
+    if (staticReview && initialToolA && initialToolB && !hasCustomData) {
+      setReview(staticReview);
+      setToolA(initialToolA);
+      setToolB(initialToolB);
+      setIsLoading(false);
+      return;
+    }
+
     import('@/lib/contentSource').then(async (src) => {
       const [allReviews, allTools] = await Promise.all([
         src.getPublishedReviews(),
@@ -52,7 +72,7 @@ export default function ReviewDetailsClient({ staticReview, slug }: ReviewDetail
       }
       setIsLoading(false);
     });
-  }, [slug, staticReview]);
+  }, [slug, staticReview, initialToolA, initialToolB]);
 
   if (isLoading) {
     return (

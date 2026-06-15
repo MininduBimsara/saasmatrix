@@ -1,7 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { getPublishedReviews, getAllTools } from '@/lib/contentSource';
-import { Tool } from '@/lib/data';
+import { Tool, Review } from '@/lib/data';
 import ReviewDetailsClient from '@/components/ReviewDetailsClient';
 
 // Render per-request so scheduled/paused items are evaluated against the
@@ -78,15 +78,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
   
-  let staticReview = null;
+  let staticReview: Review | null = null;
+  let initialToolA: Tool | null = null;
+  let initialToolB: Tool | null = null;
   try {
-    const reviews = await getPublishedReviews();
-    staticReview = reviews.find((r) => r.slug === slug) || null;
+    const [reviews, allTools] = await Promise.all([
+      getPublishedReviews(),
+      getAllTools()
+    ]);
+    const foundReview = reviews.find((r) => r.slug === slug) || null;
+    if (foundReview) {
+      staticReview = foundReview;
+      initialToolA = allTools.find((t) => t.slug === foundReview.toolA) || null;
+      initialToolB = allTools.find((t) => t.slug === foundReview.toolB) || null;
+    }
   } catch (error) {
     console.error("Page fetch error for review:", error);
   }
 
-  return <ReviewDetailsClient staticReview={staticReview} slug={slug} />;
+  return (
+    <ReviewDetailsClient
+      staticReview={staticReview}
+      slug={slug}
+      initialToolA={initialToolA}
+      initialToolB={initialToolB}
+    />
+  );
 }
 
 

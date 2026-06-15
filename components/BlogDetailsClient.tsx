@@ -21,6 +21,16 @@ export default function BlogDetailsClient({
   const [isLoading, setIsLoading] = useState<boolean>(!staticPost);
 
   useEffect(() => {
+    const hasCustomData = typeof window !== "undefined" && (
+      !!localStorage.getItem("saasrooms_custom_blog")
+    );
+
+    if (staticPost && !hasCustomData) {
+      setPost(staticPost);
+      setIsLoading(false);
+      return;
+    }
+
     import("@/lib/contentSource").then(async (src) => {
       const allPosts = await src.getPublishedBlogPosts();
       const found = allPosts.find((p) => p.slug === slug);
