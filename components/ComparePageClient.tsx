@@ -22,6 +22,92 @@ interface ComparePageClientProps {
   initialReviews: Review[];
 }
 
+/* ----------------------------------------------------------------------------
+ * Brand grouping: many tools share a name (e.g. four "Smartsheet" tier rows)
+ * or a parentSlug (e.g. "clickup-free" → "clickup"). We collapse those into a
+ * single brand so the selector dropdown stays short, and expose each tier as a
+ * compact variant chip instead of bloating one flat <select> list.
+ * ------------------------------------------------------------------------- */
+
+interface Brand {
+  key: string;
+  label: string;
+  iconUrl?: string;
+  variants: Tool[];
+}
+
+function getBrandKey(t: Tool): string {
+  return t.parentSlug || t.name;
+}
+
+function variantLabel(t: Tool): string {
+  return t.tierName || t.startingPrice || "Plan";
+}
+
+function buildBrands(toolsInCat: Tool[]): Brand[] {
+  const map = new Map<string, Tool[]>();
+  for (const t of toolsInCat) {
+    const key = getBrandKey(t);
+    const arr = map.get(key) ?? [];
+    arr.push(t);
+    map.set(key, arr);
+  }
+  return Array.from(map.entries()).map(([key, variants]) => {
+    // Prefer the parent tool's display name; otherwise the most common name.
+    const parent = variants.find((v) => v.slug === key);
+    const label =
+      parent?.name ??
+      [...variants]
+        .map((v) => v.name)
+        .sort(
+          (a, b) =>
+            variants.filter((v) => v.name === b).length -
+            variants.filter((v) => v.name === a).length,
+        )[0] ??
+      key;
+    const iconUrl = variants.find((v) => v.iconUrl)?.iconUrl;
+    const sortedVariants = [...variants].sort(
+      (a, b) => (a.numericPrice ?? 0) - (b.numericPrice ?? 0),
+    );
+    return { key, label, iconUrl, variants: sortedVariants };
+  });
+}
+
+function ToolLogo({
+  tool,
+  size = "md",
+  className = "",
+}: {
+  tool: Tool | null;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const dims =
+    size === "lg"
+      ? "h-12 w-12 text-sm p-1.5"
+      : size === "sm"
+        ? "h-6 w-6 text-[10px] p-0.5"
+        : "h-9 w-9 text-xs p-1";
+  const initials = (tool?.name ?? "?").substring(0, 2).toUpperCase();
+  if (tool?.iconUrl) {
+    return (
+      <img
+        src={tool.iconUrl}
+        alt={tool.name}
+        referrerPolicy="no-referrer"
+        className={`${dims} rounded-lg object-contain bg-white border border-slate-200 shrink-0 ${className}`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${dims} rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold shrink-0 ${className}`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function ComparePageClient({ initialTools, initialReviews }: ComparePageClientProps) {
   const defaultCategory = initialTools[0]?.category ?? "";
   const defaultCatTools = defaultCategory
@@ -99,6 +185,39 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
     return tools.find((t) => t.slug === slugB) || tools[1] || null;
   }, [slugB, tools]);
 
+  // Group the current category's tools into brands for the two-step selector.
+  const brands = useMemo(() => buildBrands(filteredTools), [filteredTools]);
+
+  const brandA = useMemo(
+    () =>
+      brands.find((b) => b.variants.some((v) => v.slug === slugA)) ??
+      brands[0] ??
+      null,
+    [brands, slugA],
+  );
+  const brandB = useMemo(
+    () =>
+      brands.find((b) => b.variants.some((v) => v.slug === slugB)) ??
+      brands[1] ??
+      brands[0] ??
+      null,
+    [brands, slugB],
+  );
+
+  // Switching brand picks that brand's cheapest tier that isn't already used on
+  // the other side, so the two columns never collapse to the same variant.
+  const handleBrandChange = (which: "A" | "B", brandKey: string) => {
+    const brand = brands.find((b) => b.key === brandKey);
+    if (!brand) return;
+    const other = which === "A" ? slugB : slugA;
+    const pick =
+      brand.variants.find((v) => v.slug !== other)?.slug ??
+      brand.variants[0]?.slug ??
+      "";
+    if (which === "A") setSlugA(pick);
+    else setSlugB(pick);
+  };
+
   const toolAName = toolA?.name ?? "Tool A";
   const toolBName = toolB?.name ?? "Tool B";
   const toolACategory = toolA?.category ?? selectedCategory;
@@ -147,7 +266,12 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
     const newCat = e.target.value;
     setSelectedCategory(newCat);
     const newTools = tools.filter((t) => t.category === newCat);
-    if (newTools.length >= 2) {
+    const newBrands = buildBrands(newTools);
+    if (newBrands.length >= 2) {
+      // Prefer two distinct brands so the default view compares competitors.
+      setSlugA(newBrands[0].variants[0].slug);
+      setSlugB(newBrands[1].variants[0].slug);
+    } else if (newTools.length >= 2) {
       setSlugA(newTools[0].slug);
       setSlugB(newTools[1].slug);
     }
@@ -242,33 +366,55 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
             </div>
 
             <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-              {/* Option A Selector */}
+              {/* Option A Selector — brand dropdown + variant chips */}
               <div className="w-full lg:w-5/12">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 font-mono mb-2">
                   Select Competitor Alpha:
                 </label>
-                <select
-                  id="select-alpha"
-                  value={slugA}
-                  onChange={(e) => {
-                    setSlugA(e.target.value);
-                  }}
-                  className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
-                >
-                  {filteredTools.map((t) => (
-                    <option
-                      key={t.slug}
-                      value={t.slug}
-                      disabled={t.slug === slugB}
-                    >
-                      {t.name} (Starting {t.startingPrice})
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-2.5 focus-within:ring-1 focus-within:ring-blue-600 focus-within:border-blue-600">
+                  <ToolLogo tool={toolA} size="md" />
+                  <select
+                    id="select-alpha"
+                    value={brandA?.key ?? ""}
+                    onChange={(e) => handleBrandChange("A", e.target.value)}
+                    className="flex-1 min-w-0 text-sm font-sans font-bold bg-transparent text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    {brands.map((b) => (
+                      <option key={b.key} value={b.key}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {brandA && brandA.variants.length > 1 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {brandA.variants.map((v) => {
+                      const active = v.slug === slugA;
+                      const usedByB = v.slug === slugB;
+                      return (
+                        <button
+                          key={v.slug}
+                          type="button"
+                          onClick={() => setSlugA(v.slug)}
+                          disabled={usedByB}
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                            active
+                              ? "bg-amber-500 border-amber-500 text-white"
+                              : usedByB
+                                ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-amber-400 hover:text-amber-700 cursor-pointer"
+                          }`}
+                        >
+                          {variantLabel(v)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Middle versus separator */}
-              <div className="flex flex-col items-center justify-center">
+              <div className="flex flex-col items-center justify-center pt-6 lg:pt-0">
                 <span className="h-10 w-10 bg-white border border-slate-200 shadow-xs rounded-full flex items-center justify-center">
                   <ArrowLeftRight className="h-4 w-4 text-blue-605" />
                 </span>
@@ -277,29 +423,51 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
                 </span>
               </div>
 
-              {/* Option B Selector */}
+              {/* Option B Selector — brand dropdown + variant chips */}
               <div className="w-full lg:w-5/12">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 font-mono mb-2">
                   Select Competitor Beta:
                 </label>
-                <select
-                  id="select-beta"
-                  value={slugB}
-                  onChange={(e) => {
-                    setSlugB(e.target.value);
-                  }}
-                  className="w-full text-sm font-sans font-bold bg-white text-slate-800 p-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
-                >
-                  {filteredTools.map((t) => (
-                    <option
-                      key={t.slug}
-                      value={t.slug}
-                      disabled={t.slug === slugA}
-                    >
-                      {t.name} (Starting {t.startingPrice})
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-2.5 focus-within:ring-1 focus-within:ring-blue-600 focus-within:border-blue-600">
+                  <ToolLogo tool={toolB} size="md" />
+                  <select
+                    id="select-beta"
+                    value={brandB?.key ?? ""}
+                    onChange={(e) => handleBrandChange("B", e.target.value)}
+                    className="flex-1 min-w-0 text-sm font-sans font-bold bg-transparent text-slate-800 focus:outline-none cursor-pointer"
+                  >
+                    {brands.map((b) => (
+                      <option key={b.key} value={b.key}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {brandB && brandB.variants.length > 1 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {brandB.variants.map((v) => {
+                      const active = v.slug === slugB;
+                      const usedByA = v.slug === slugA;
+                      return (
+                        <button
+                          key={v.slug}
+                          type="button"
+                          onClick={() => setSlugB(v.slug)}
+                          disabled={usedByA}
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                            active
+                              ? "bg-blue-600 border-blue-600 text-white"
+                              : usedByA
+                                ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-700 cursor-pointer"
+                          }`}
+                        >
+                          {variantLabel(v)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -317,12 +485,22 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
                   <span className="absolute top-4 right-4 text-xs font-bold text-amber-700 uppercase font-mono bg-amber-100 px-2 py-0.5 rounded">
                     Product A Option
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider font-mono text-amber-800/80 block mb-1">
+                  <span className="text-[10px] uppercase tracking-wider font-mono text-amber-800/80 block mb-2">
                     {toolACategory.replace("-", " ")}
                   </span>
-                  <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight mb-3">
-                    {toolAName}
-                  </h3>
+                  <div className="flex items-center gap-3 mb-3 pr-24">
+                    <ToolLogo tool={toolA} size="lg" />
+                    <div className="min-w-0">
+                      <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">
+                        {toolAName}
+                      </h3>
+                      {toolATierName && (
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                          {toolATierName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <p className="text-xs leading-relaxed text-slate-650 mb-4">
                     {toolA?.oneLineOpinion ?? "No tool has been loaded yet."}
                   </p>
@@ -341,12 +519,22 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
                   <span className="absolute top-4 right-4 text-xs font-bold text-slate-405 uppercase font-mono bg-slate-100 px-2 py-0.5 rounded">
                     Product B Option
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider font-mono text-slate-550 block mb-1">
+                  <span className="text-[10px] uppercase tracking-wider font-mono text-slate-550 block mb-2">
                     {toolBCategory.replace("-", " ")}
                   </span>
-                  <h3 className="text-xl md:text-2xl font-extrabold text-slate-905 tracking-tight mb-3">
-                    {toolBName}
-                  </h3>
+                  <div className="flex items-center gap-3 mb-3 pr-24">
+                    <ToolLogo tool={toolB} size="lg" />
+                    <div className="min-w-0">
+                      <h3 className="text-xl md:text-2xl font-extrabold text-slate-905 tracking-tight leading-tight truncate">
+                        {toolBName}
+                      </h3>
+                      {toolBTierName && (
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                          {toolBTierName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <p className="text-xs leading-relaxed text-slate-655 mb-4">
                     {toolB?.oneLineOpinion ?? "No tool has been loaded yet."}
                   </p>
@@ -370,10 +558,30 @@ export default function ComparePageClient({ initialTools, initialReviews }: Comp
                 />
 
                 <div className="border border-slate-200 rounded-xl overflow-hidden bg-white text-xs">
-                  <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-200 p-4 font-bold text-slate-800">
-                    <div>Parameter Feature</div>
-                    <div>{toolAName} Spec</div>
-                    <div>{toolBName} Spec</div>
+                  <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-200 p-4 font-bold text-slate-800 gap-2">
+                    <div className="self-center">Parameter Feature</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ToolLogo tool={toolA} size="sm" />
+                      <div className="min-w-0">
+                        <span className="block truncate">{toolAName}</span>
+                        {toolATierName && (
+                          <span className="block text-[10px] font-medium text-slate-500 truncate">
+                            {toolATierName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ToolLogo tool={toolB} size="sm" />
+                      <div className="min-w-0">
+                        <span className="block truncate">{toolBName}</span>
+                        {toolBTierName && (
+                          <span className="block text-[10px] font-medium text-slate-500 truncate">
+                            {toolBTierName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="divide-y divide-slate-100">
