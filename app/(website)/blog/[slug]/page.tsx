@@ -89,7 +89,11 @@ export default async function BlogPostPage({ params }: PageProps) {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            // Escape `<` so a title/excerpt containing `</script>` cannot break
+            // out of this inline script tag (stored-XSS hardening).
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
         />
       )}
       <BlogDetailsClient staticPost={staticPost} slug={slug} />

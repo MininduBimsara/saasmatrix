@@ -73,16 +73,22 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
     return map;
   }, []);
 
-  // Get tools that are actually used in the review cards to avoid empty states
+  // Resolve a tool slug to its display name (with a capitalized fallback)
+  const resolveToolName = (slug: string) =>
+    toolLookup.get(slug) || slug.charAt(0).toUpperCase() + slug.slice(1);
+
+  // Get tools that are actually used in the review cards, deduplicated by
+  // display name so the dropdown shows each platform once (multiple slugs can
+  // map to the same name, e.g. content-pipeline variants).
   const toolsInReviews = useMemo(() => {
     const uniqueSlugs = Array.from(
       new Set(reviews.flatMap(r => [r.toolA, r.toolB]))
     );
-    return uniqueSlugs
-      .map(slug => ({
-        slug,
-        name: toolLookup.get(slug) || slug.charAt(0).toUpperCase() + slug.slice(1)
-      }))
+    const uniqueNames = Array.from(
+      new Set(uniqueSlugs.map(resolveToolName))
+    );
+    return uniqueNames
+      .map(name => ({ name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [reviews, toolLookup]);
 
@@ -125,10 +131,10 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
   const filteredAndSortedReviews = useMemo(() => {
     let result = [...reviews];
 
-    // 1. Tool Filter
+    // 1. Tool Filter (matched by display name so deduped entries cover every slug)
     if (selectedTool !== 'all') {
       result = result.filter(
-        r => r.toolA === selectedTool || r.toolB === selectedTool
+        r => resolveToolName(r.toolA) === selectedTool || resolveToolName(r.toolB) === selectedTool
       );
     }
 
@@ -306,7 +312,7 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
                   >
                     <option value="all">All Software Platforms</option>
                     {toolsInReviews.map(t => (
-                      <option key={t.slug} value={t.slug}>{t.name}</option>
+                      <option key={t.name} value={t.name}>{t.name}</option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
@@ -379,7 +385,7 @@ export function ReviewsPageClient({ initialReviews, initialTools }: ReviewsPageC
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-3 py-1 text-[11px] font-medium text-slate-600 shadow-2xs"
                   >
-                    Platform: <span className="font-bold text-slate-800">{toolLookup.get(selectedTool) || selectedTool}</span>
+                    Platform: <span className="font-bold text-slate-800">{selectedTool}</span>
                     <button onClick={() => handleToolChange('all')} className="text-slate-400 hover:text-rose-600 transition-colors">
                       <X className="h-3 w-3" />
                     </button>
